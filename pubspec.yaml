@@ -51,62 +51,19 @@ dependencies:
   hive_flutter: ^1.1.0
   crypto: ^3.0.3
 
-  # ── Firebase stack ──────────────────────────────────────────────────────────
-  firebase_core: ^4.0.0 # Khởi tạo Firebase
-  firebase_messaging: ^16.0.0 # FCM push notifications
-  firebase_analytics: ^12.0.0 # Analytics sự kiện, màn hình
-
-  # ── Notifications ───────────────────────────────────────────────────────────
-  flutter_local_notifications: ^19.4.0 # Thông báo cục bộ (schedule, actions…)
-
-  # ── UI, UX & layout widgets ─────────────────────────────────────────────────
   flutter_screenutil: 5.9.3 # Responsive size/dp theo màn hình
-  cached_network_image: ^3.4.1 # Ảnh mạng có cache + placeholder/error
-  flutter_svg: ^2.0.10+1 # Render SVG vector
-  lottie: ^3.2.0 # Animation Lottie JSON
-  shimmer: ^3.0.0 # Hiệu ứng skeleton shimmering
-  carousel_slider: ^5.0.0 # Slider/carousel item
-  visibility_detector: 0.4.0+2 # Phát hiện widget vào/ra viewport
-  keyboard_avoider: 0.2.0 # Tránh bàn phím che nội dung đơn giản
-  flutter_keyboard_visibility: ^6.0.0 # Lắng nghe trạng thái bàn phím (show/hide)
   flutter_smart_dialog: ^4.9.8+9 # HUD/dialog/toast linh hoạt, queue
-  gradient_borders: ^1.0.0
-  country_flags: ^4.0.1
-
-  # ── UX feedback / communication ─────────────────────────────────────────────
-  rate_my_app: ^2.3.1 # Nhắc người dùng đánh giá app (in-app review)
-  timeago: ^3.7.0 # Định dạng thời gian tương đối (e.g. "5 phút trước")
+  flutter_svg: ^2.0.10+1 # Render SVG vector
 
   # ── App config & tiện ích chung ─────────────────────────────────────────────
   flutter_native_splash: ^2.4.4 # Tạo splash màn hình native
   flutter_dotenv: ^5.2.1 # Đọc biến môi trường từ file .env
-  url_launcher: ^6.3.1 # Mở URL, gọi điện, email, map…
   intl: 0.20.2 # Định dạng số/ngày/chuỗi đa ngôn ngữ
-  dart_jsonwebtoken: ^3.2.0 # JWT encode/decode/verify
-  permission_handler: ^12.0.0+1 # Xin/cấp quyền hệ thống (camera, storage…)
-  rename_app: ^1.6.5 # Đổi tên app (rename_app)
-  auto_size_text: ^3.0.0
-  mobile_device_identifier: ^0.0.3
+  url_launcher: ^6.3.1 # Mở liên kết bên ngoài
 
-  image_picker: 1.1.2 # Chọn ảnh từ thiết bị
-  image_cropper: ^8.0.2 # Cắt ảnh
-  animated_bottom_navigation_bar: ^1.4.0
-  firebase_auth: ^6.1.1
-  google_sign_in: ^7.2.0
-  sign_in_with_apple: ^7.0.1
-  cloud_firestore: ^6.0.3
-  firebase_storage: ^13.0.3
-  in_app_purchase: ^3.2.3
-  in_app_purchase_android: ^0.4.0+6
-  in_app_purchase_storekit: ^0.4.6
-  pin_code_fields: ^8.0.1
-  photo_manager: ^3.7.1
-  photo_view: ^0.15.0
-  widget_zoom: ^0.0.4
-  speech_to_text: ^7.3.0
-  avatar_glow: ^3.0.1
-  camera: ^0.11.3
+  # ── Animations & Audio ───────────────────────────────────────────────────────
   flutter_animate: ^4.5.2
+  just_audio: ^0.10.6
 
 dev_dependencies:
   # ── Test & lint ─────────────────────────────────────────────────────────────
@@ -134,6 +91,7 @@ flutter:
     - assets/images/
     - assets/icons/
     - assets/lotties/
+    - assets/audio/
     - .env
   fonts:
     - family: Roboto

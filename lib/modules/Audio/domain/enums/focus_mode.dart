@@ -1,4 +1,0 @@
-enum FocusMode {
-  countdown,
-  stopwatch,
-}

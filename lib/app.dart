@@ -44,10 +44,7 @@ Widget _buildWithProviders({required Widget child}) {
   return MultiBlocProvider(
     providers: [
       BlocProvider(create: (_) => langCubit),
-      BlocProvider(create: (_) => splashCubit),
       BlocProvider(create: (_) => themeCubit),
-      BlocProvider(create: (_) => authCubit),
-      BlocProvider(create: (_) => cameraCubit),
     ],
     child: child,
   );

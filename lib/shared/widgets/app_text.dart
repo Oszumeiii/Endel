@@ -1,4 +1,3 @@
-import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -58,15 +57,13 @@ class AppText extends StatelessWidget {
   final HitTestBehavior behavior;
   final TextDecorationStyle? decorationStyle;
   final double minFontSize;
-  final double? letterSpacing;
   final bool showSuggestLoginDialog;
-  final bool? isLogin;
   final bool ignorePointer;
+  final bool? isLogin;
+  final double? letterSpacing;
 
   @override
   Widget build(BuildContext context) {
-    // Màu chữ mặc định: tự động thay đổi theo theme
-    // Dark mode: màu trắng, Light mode: màu đen
     final defaultTextColor = textColor ?? context.colorScheme.onSurface;
 
     return IgnorePointer(
@@ -77,52 +74,33 @@ class AppText extends StatelessWidget {
         child: Container(
           padding: padding,
           child: prefix == null
-              ? enableAutoResize
-                    ? AutoSizeText(
-                        text?.getTextByCasing(textCase) ?? '',
-                        minFontSize: minFontSize,
-                        overflow: overflow,
-                        maxLines: maxLines,
-                        textAlign: textAlign ?? TextAlign.start,
-                        style: context.textTheme.regular.copyWith(
-                          color: defaultTextColor,
-                          fontWeight: fontWeight ?? FontWeight.w500,
-                          fontSize: fontSize?.sp ?? 16.sp,
-                          height: height?.h ?? 1,
-                          fontStyle: fontStyle,
-                          decoration: decoration,
-                          decorationColor: textColor ?? defaultTextColor,
-                          letterSpacing: letterSpacing,
-                        ),
-                      )
-                    : Text(
-                        text?.getTextByCasing(textCase) ?? '',
-                        overflow: overflow,
-                        maxLines: maxLines,
-                        textAlign: textAlign ?? TextAlign.start,
-                        style: context.textTheme.regular.copyWith(
-                          color: defaultTextColor,
-                          fontWeight: fontWeight ?? FontWeight.w500,
-                          fontSize: fontSize?.sp ?? 16.sp,
-                          height: height?.h ?? 1,
-                          fontStyle: fontStyle,
-                          decoration: decoration,
-                          decorationColor: textColor ?? defaultTextColor,
-                          letterSpacing: letterSpacing,
-                        ),
-                      )
+              ? Text(
+                  text?.getTextByCasing(textCase) ?? '',
+                  overflow: overflow,
+                  maxLines: maxLines,
+                  textAlign: textAlign ?? TextAlign.start,
+                  style: context.textTheme.regular.copyWith(
+                    color: defaultTextColor,
+                    fontWeight: fontWeight ?? FontWeight.w500,
+                    fontSize: fontSize?.sp ?? 16.sp,
+                    height: height?.h ?? 1,
+                    fontStyle: fontStyle,
+                    decoration: decoration,
+                    decorationColor: textColor ?? defaultTextColor,
+                    letterSpacing: letterSpacing,
+                  ),
+                )
               : Row(
                   mainAxisAlignment:
                       mainAxisAlignment ?? MainAxisAlignment.center,
                   children: [
                     prefix!,
                     SizedBox(width: spacing),
-                    if (enableAutoResize)
-                      AutoSizeText(
+                    Flexible(
+                      child: Text(
                         text?.getTextByCasing(textCase) ?? '',
                         overflow: overflow,
                         maxLines: maxLines,
-                        minFontSize: minFontSize.sp,
                         textAlign: textAlign ?? TextAlign.start,
                         style: context.textTheme.regular.copyWith(
                           color: defaultTextColor,
@@ -134,26 +112,8 @@ class AppText extends StatelessWidget {
                           decorationColor: textColor ?? defaultTextColor,
                           letterSpacing: letterSpacing,
                         ),
-                      )
-                    else
-                      Flexible(
-                        child: Text(
-                          text?.getTextByCasing(textCase) ?? '',
-                          overflow: overflow,
-                          maxLines: maxLines,
-                          textAlign: textAlign ?? TextAlign.start,
-                          style: context.textTheme.regular.copyWith(
-                            color: defaultTextColor,
-                            fontWeight: fontWeight ?? FontWeight.w500,
-                            fontSize: fontSize?.sp ?? 16.sp,
-                            height: height?.h,
-                            fontStyle: fontStyle,
-                            decoration: decoration,
-                            decorationColor: textColor ?? defaultTextColor,
-                            letterSpacing: letterSpacing,
-                          ),
-                        ),
                       ),
+                    ),
                   ],
                 ),
         ),

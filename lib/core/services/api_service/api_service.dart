@@ -10,7 +10,6 @@ import 'package:talker_flutter/talker_flutter.dart';
 import '../../../common/constants/constants.dart';
 import '../../language/generated/l10n.dart';
 import '../../../data/interceptors/error_interceptor.dart';
-import '../../../data/interceptors/auth_interceptor.dart';
 import '../../../data/interceptors/curl_logger_interceptor.dart';
 import 'api_error.dart';
 
@@ -34,7 +33,6 @@ abstract class ApiModule {
           ),
         )
         ..interceptors.addAll([
-          AuthInterceptor(),
           CurlLoggerInterceptor(), // Log as cURL command
           TalkerDioLogger(
             talker: talker,

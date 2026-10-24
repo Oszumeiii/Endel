@@ -65,7 +65,7 @@ class Initializer {
         // Observer cho Bloc/Cubit → log lifecycle & events bằng Talker
         Bloc.observer = TalkerBlocObserver(talker: talker);
 
-        // Giới hạn hướng màn hình (ví dụ: chỉ portraitUp)
+        // Hỗ trợ hiển thị cả dọc và ngang.
         await preferredOrientations();
 
         // ScreenUtil cần đảm bảo có kích thước window trước khi dùng
@@ -149,9 +149,9 @@ class Initializer {
     _updateSystemUIOverlayStyle(themeMode);
   }
 
-  /// Khoá orientation theo nhu cầu (ở đây: chỉ portraitUp)
+  /// Hỗ trợ cả hướng dọc và ngang.
   static Future<void> preferredOrientations() async {
-    await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+    await SystemChrome.setPreferredOrientations(DeviceOrientation.values);
   }
 
   /// Gắn hooks bắt lỗi toàn cục:

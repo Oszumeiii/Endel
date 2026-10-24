@@ -2,7 +2,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class AppConstants {
   AppConstants._();
-  static const nameApp = 'SkinSort';
+  static const nameApp = 'Endel';
   static final String baseUrlFunction = dotenv.env['API_URL_FUNCTION'] ?? '';
 
   static const String androidPackageName = "com.fau.skinsoft";

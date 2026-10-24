@@ -1,11 +1,9 @@
-import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:rx_shared_preferences/rx_shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 
-import '../../../modules/profile/models/user_model.dart';
 
 class _Keys {
   static const lang = 'lang';
@@ -150,60 +148,7 @@ class Storage {
 
   static bool get isSecondLaunch => appLaunchCount == 2;
 
-  // Lưu thông tin người dùng vào SharedPreferences
-  static Future<void> setUser(UserModel user) async {
-    final jsonUser = jsonEncode(user.toJson()); // Chuyển UserModel thành JSON
-    await _set(_Keys.user, jsonUser); // Lưu JSON vào SharedPreferences
-  }
-
-  // Truy xuất thông tin người dùng từ SharedPreferences
-  static UserModel? get user {
-    final jsonString = _get<String>(
-      _Keys.user,
-    ); // Lấy JSON từ SharedPreferences
-    if (jsonString == null) return null;
-    try {
-      return UserModel.fromJson(
-        jsonDecode(jsonString),
-      ); // Chuyển JSON thành UserModel
-    } catch (e) {
-      return null;
-    }
-  }
-
-  static Future<void> clearInfoUser() async {
-    // Xóa thông tin người dùng
-    await _preferences.remove(_Keys.user);
-
-    // Xóa accessToken và refreshToken
-    await _storage.delete(key: _Keys.accessToken);
-    await _storage.delete(key: _Keys.refreshToken);
-  }
-
-  static bool get isLoggedIn => user != null;
-
   static String? get deviceName => _get(_Keys.deviceName);
 
   static Future<void> setDeviceName(String? val) => _set(_Keys.deviceName, val);
-
-  // Truy xuất thông tin người dùng mặc định từ SharedPreferences
-  static UserModel? get userDefault {
-    final jsonString = _get<String>(
-      _Keys.userDefault,
-    ); // Lấy JSON từ SharedPreferences
-    if (jsonString == null) return null;
-    try {
-      return UserModel.fromJson(
-        jsonDecode(jsonString),
-      ); // Chuyển JSON thành UserModel
-    } catch (e) {
-      return null;
-    }
-  }
-
-  // Lưu thông tin người dùng mặc định vào SharedPreferences
-  static Future<void> setUserDefault(UserModel user) async {
-    final jsonUser = jsonEncode(user.toJson()); // Chuyển UserModel thành JSON
-    await _set(_Keys.userDefault, jsonUser); // Lưu JSON vào SharedPreferences
-  }
 }
