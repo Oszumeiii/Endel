@@ -12,6 +12,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:just_audio_background/just_audio_background.dart';
 import 'package:talker_bloc_logger/talker_bloc_logger_observer.dart';
 import 'package:talker_flutter/talker_flutter.dart';
 
@@ -46,6 +47,13 @@ class Initializer {
       () async {
         // Bắt buộc: đảm bảo binding đã sẵn sàng (plugins có thể cần)
         WidgetsFlutterBinding.ensureInitialized();
+
+        await JustAudioBackground.init(
+          androidNotificationChannelId: 'com.ptn.rvc.channel.audio',
+          androidNotificationChannelName: 'Endel Soundscape Playback',
+          androidNotificationOngoing: true,
+          androidStopForegroundOnPause: true,
+        );
 
         // (Tuỳ dự án) Nếu .env được dùng cho config init, hãy load .env TRƯỚC khi dùng
         await dotenv.load(fileName: '.env');

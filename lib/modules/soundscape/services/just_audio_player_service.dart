@@ -2,11 +2,12 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:just_audio/just_audio.dart';
+import 'package:just_audio_background/just_audio_background.dart';
 
 import '../domain/entities/soundscape_item.dart';
 import '../domain/services/audio_player_service.dart';
 
-/// JustAudio implementation with looping playback and cancellable fades.
+/// JustAudio implementation with looping playback, background service, and cancellable fades.
 class JustAudioPlayerService implements AudioPlayerService {
   JustAudioPlayerService({AudioPlayer? player})
     : _player = player ?? AudioPlayer() {
@@ -85,11 +86,19 @@ class JustAudioPlayerService implements AudioPlayerService {
         );
       }
       await _player.stop();
-      if (soundscape.isRemote) {
-        await _player.setUrl(soundscape.audioPath);
-      } else {
-        await _player.setAsset(soundscape.audioPath);
-      }
+
+      final mediaItem = MediaItem(
+        id: soundscape.id,
+        album: soundscape.category.label,
+        title: soundscape.title,
+        artist: soundscape.subtitle,
+      );
+
+      final AudioSource audioSource = soundscape.isRemote
+          ? AudioSource.uri(Uri.parse(soundscape.audioPath), tag: mediaItem)
+          : AudioSource.asset(soundscape.audioPath, tag: mediaItem);
+
+      await _player.setAudioSource(audioSource);
       _loadedSoundscapeId = soundscape.id;
       await _player.setLoopMode(LoopMode.one);
       await _player.setVolume(0);
@@ -214,6 +223,7 @@ class JustAudioPlayerService implements AudioPlayerService {
     _fadeGeneration++;
   }
 
+  /// Tối ưu tần suất gọi MethodChannel (stepInterval = 100ms) để không gây nghẽn UI/Bridge.
   Future<void> _fadeVolume({
     required double from,
     required double to,
@@ -225,9 +235,9 @@ class JustAudioPlayerService implements AudioPlayerService {
       return;
     }
 
-    const stepInterval = Duration(milliseconds: 50);
+    const stepInterval = Duration(milliseconds: 100);
     final steps = (duration.inMilliseconds ~/ stepInterval.inMilliseconds)
-        .clamp(1, 300);
+        .clamp(1, 150);
     final delay = Duration(milliseconds: duration.inMilliseconds ~/ steps);
 
     for (var step = 1; step <= steps; step++) {

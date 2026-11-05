@@ -239,7 +239,7 @@ class SoundscapeCubit extends Cubit<SoundscapeState> {
       ..reset()
       ..start();
     _lastTickerElapsed = Duration.zero;
-    _tickerTimer = Timer.periodic(const Duration(milliseconds: 250), (_) {
+    _tickerTimer = Timer.periodic(const Duration(milliseconds: 500), (_) {
       _tick();
     });
   }

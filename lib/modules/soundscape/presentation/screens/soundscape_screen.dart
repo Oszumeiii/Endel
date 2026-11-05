@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:auto_route/auto_route.dart';
 
+import '../../domain/entities/visual_theme_config.dart';
+import '../../domain/enums/wave_style.dart';
 import '../cubit/soundscape_cubit.dart';
 import '../cubit/soundscape_state.dart';
 import '../widgets/endel_countdown_clock.dart';
@@ -17,6 +19,7 @@ import '../widgets/visual_selector_sheet.dart';
 /// - Tự động co dãn (responsive) theo từng kích thước màn hình, không bao giờ bị overflow pixel
 /// - Hỗ trợ Zen Mode: chạm vào màn hình để ẩn/hiện toàn bộ thanh điều khiển
 /// - Hỗ trợ chọn ảnh động thủ công hoặc tự động chuyển theo nhạc (Auto Visualizer)
+/// - Tối ưu hoá luồng: Áp dụng Granular Rebuild (BlocSelector/buildWhen) cô lập các widget tĩnh khỏi nhịp đếm ticker 500ms
 @RoutePage()
 class SoundscapeScreen extends StatelessWidget {
   const SoundscapeScreen({super.key});
@@ -63,38 +66,64 @@ class _SoundscapeView extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF07090A),
-      body: BlocBuilder<SoundscapeCubit, SoundscapeState>(
-        builder: (context, state) {
-          final cubit = context.read<SoundscapeCubit>();
-          final isControlsVisible = state.isControlsVisible;
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          final maxHeight = constraints.maxHeight;
 
-          return LayoutBuilder(
-            builder: (context, constraints) {
-              final maxHeight = constraints.maxHeight;
+          final isShort = maxHeight < 680;
+          final topSpacing = isShort ? 4.0 : 8.0;
+          final bottomSpacing = isShort ? 12.0 : 20.0;
+          final controlsSpacing = isShort ? 12.0 : 18.0;
 
-              final isShort = maxHeight < 680;
-              final topSpacing = isShort ? 4.0 : 8.0;
-              final bottomSpacing = isShort ? 12.0 : 20.0;
-              final controlsSpacing = isShort ? 12.0 : 18.0;
-
-              return Stack(
-                children: [
-                  Positioned.fill(
-                    child: IgnorePointer(
-                      child: EndelVisualizer(
-                        isPlaying: state.isPlaying,
-                        themeConfig: state.selectedSoundscape.themeConfig,
-                        activeWaveStyle: state.activeWaveStyle,
-                      ),
+          return Stack(
+            children: [
+              // 1. VISUALIZER NỀN: Cô lập hoàn toàn, chỉ cập nhật khi đổi track, wave style hoặc play/pause
+              Positioned.fill(
+                child: IgnorePointer(
+                  child: BlocSelector<
+                    SoundscapeCubit,
+                    SoundscapeState,
+                    ({
+                      bool isPlaying,
+                      VisualThemeConfig themeConfig,
+                      WaveStyle activeWaveStyle,
+                    })
+                  >(
+                    selector: (state) => (
+                      isPlaying: state.isPlaying,
+                      themeConfig: state.selectedSoundscape.themeConfig,
+                      activeWaveStyle: state.activeWaveStyle,
                     ),
+                    builder: (context, visualData) {
+                      return EndelVisualizer(
+                        isPlaying: visualData.isPlaying,
+                        themeConfig: visualData.themeConfig,
+                        activeWaveStyle: visualData.activeWaveStyle,
+                      );
+                    },
                   ),
+                ),
+              ),
 
-                  SafeArea(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        // PHẦN TRÊN: HUD HEADER & CATEGORY BAR
-                        AnimatedOpacity(
+              SafeArea(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    // 2. PHẦN TRÊN: HUD HEADER & CATEGORY BAR (Không rebuild khi countdown chạy)
+                    BlocBuilder<SoundscapeCubit, SoundscapeState>(
+                      buildWhen: (prev, curr) {
+                        return prev.isControlsVisible != curr.isControlsVisible ||
+                            prev.selectedSoundscape != curr.selectedSoundscape ||
+                            prev.audioStatus != curr.audioStatus ||
+                            prev.activeWaveStyle != curr.activeWaveStyle ||
+                            prev.isAutoVisual != curr.isAutoVisual ||
+                            prev.selectedCategory != curr.selectedCategory;
+                      },
+                      builder: (context, state) {
+                        final cubit = context.read<SoundscapeCubit>();
+                        final isControlsVisible = state.isControlsVisible;
+
+                        return AnimatedOpacity(
                           opacity: isControlsVisible ? 1.0 : 0.0,
                           duration: const Duration(milliseconds: 300),
                           curve: Curves.easeInOut,
@@ -126,11 +155,17 @@ class _SoundscapeView extends StatelessWidget {
                               ],
                             ),
                           ),
-                        ),
+                        );
+                      },
+                    ),
 
-                        // PHẦN GIỮA: VÙNG CHẠM CHUYỂN ĐỔI CHẾ ĐỘ ZEN MODE
-                        Expanded(
-                          child: GestureDetector(
+                    // 3. PHẦN GIỮA: VÙNG CHẠM CHUYỂN ĐỔI CHẾ ĐỘ ZEN MODE
+                    Expanded(
+                      child: BlocSelector<SoundscapeCubit, SoundscapeState, bool>(
+                        selector: (state) => state.isControlsVisible,
+                        builder: (context, isControlsVisible) {
+                          final cubit = context.read<SoundscapeCubit>();
+                          return GestureDetector(
                             onTap: cubit.toggleControlsVisibility,
                             behavior: HitTestBehavior.opaque,
                             child: Center(
@@ -160,11 +195,20 @@ class _SoundscapeView extends StatelessWidget {
                                     )
                                   : const SizedBox.shrink(),
                             ),
-                          ),
-                        ),
+                          );
+                        },
+                      ),
+                    ),
 
-                        // PHẦN DƯỚI: BỘ CHỌN THỜI GIAN & ĐỒNG HỒ / NÚT PLAY
-                        AnimatedOpacity(
+                    // 4. PHẦN DƯỚI: BỘ CHỌN THỜI GIAN & ĐỒNG HỒ / NÚT PLAY
+                    BlocBuilder<SoundscapeCubit, SoundscapeState>(
+                      buildWhen: (prev, curr) {
+                        return prev.isControlsVisible != curr.isControlsVisible;
+                      },
+                      builder: (context, state) {
+                        final isControlsVisible = state.isControlsVisible;
+
+                        return AnimatedOpacity(
                           opacity: isControlsVisible ? 1.0 : 0.0,
                           duration: const Duration(milliseconds: 300),
                           curve: Curves.easeInOut,
@@ -173,47 +217,98 @@ class _SoundscapeView extends StatelessWidget {
                             child: Column(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                EndelTimerSelector(
-                                  selectedDuration: state.selectedDuration,
-                                  onDurationSelected: cubit.selectDuration,
+                                // Bộ chọn thời gian: Chỉ rebuild khi người dùng đổi thời lượng đặt
+                                BlocSelector<
+                                  SoundscapeCubit,
+                                  SoundscapeState,
+                                  Duration?
+                                >(
+                                  selector: (state) => state.selectedDuration,
+                                  builder: (context, selectedDuration) {
+                                    return EndelTimerSelector(
+                                      selectedDuration: selectedDuration,
+                                      onDurationSelected: context
+                                          .read<SoundscapeCubit>()
+                                          .selectDuration,
+                                    );
+                                  },
                                 ),
                                 SizedBox(height: controlsSpacing),
-                                EndelCountdownClock(
-                                  displayTime: state.formattedDisplayTime,
-                                  isPlaying: state.isPlaying,
-                                  isLoading: state.isLoading,
-                                  progress: state.timerProgress,
-                                  onTogglePlayPause: cubit.togglePlayPause,
-                                ),
-                                if (state.hasError || state.isSessionComplete)
-                                  Padding(
-                                    padding: const EdgeInsets.only(top: 10),
-                                    child: Text(
-                                      state.hasError
-                                          ? 'Unable to play audio. Please try again.'
-                                          : 'Session complete.',
-                                      textAlign: TextAlign.center,
-                                      style: TextStyle(
-                                        color: state.hasError
-                                            ? const Color(0xFFFF8A80)
-                                            : Colors.white.withValues(
-                                                alpha: 0.55,
-                                              ),
-                                        fontSize: 12,
-                                      ),
-                                    ),
+
+                                // Đồng hồ đếm ngược: Vùng duy nhất rebuild theo nhịp ticker
+                                BlocSelector<
+                                  SoundscapeCubit,
+                                  SoundscapeState,
+                                  ({
+                                    String time,
+                                    bool isPlaying,
+                                    bool isLoading,
+                                    double progress,
+                                  })
+                                >(
+                                  selector: (state) => (
+                                    time: state.formattedDisplayTime,
+                                    isPlaying: state.isPlaying,
+                                    isLoading: state.isLoading,
+                                    progress: state.timerProgress,
                                   ),
+                                  builder: (context, clockData) {
+                                    return EndelCountdownClock(
+                                      displayTime: clockData.time,
+                                      isPlaying: clockData.isPlaying,
+                                      isLoading: clockData.isLoading,
+                                      progress: clockData.progress,
+                                      onTogglePlayPause: context
+                                          .read<SoundscapeCubit>()
+                                          .togglePlayPause,
+                                    );
+                                  },
+                                ),
+
+                                // Thông báo lỗi hoặc hoàn tất phiên
+                                BlocSelector<
+                                  SoundscapeCubit,
+                                  SoundscapeState,
+                                  ({bool hasError, bool isComplete})
+                                >(
+                                  selector: (state) => (
+                                    hasError: state.hasError,
+                                    isComplete: state.isSessionComplete,
+                                  ),
+                                  builder: (context, status) {
+                                    if (!status.hasError && !status.isComplete) {
+                                      return const SizedBox.shrink();
+                                    }
+                                    return Padding(
+                                      padding: const EdgeInsets.only(top: 10),
+                                      child: Text(
+                                        status.hasError
+                                            ? 'Unable to play audio. Please try again.'
+                                            : 'Session complete.',
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(
+                                          color: status.hasError
+                                              ? const Color(0xFFFF8A80)
+                                              : Colors.white.withValues(
+                                                  alpha: 0.55,
+                                                ),
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
                                 SizedBox(height: bottomSpacing),
                               ],
                             ),
                           ),
-                        ),
-                      ],
+                        );
+                      },
                     ),
-                  ),
-                ],
-              );
-            },
+                  ],
+                ),
+              ),
+            ],
           );
         },
       ),

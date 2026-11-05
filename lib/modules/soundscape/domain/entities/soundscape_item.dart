@@ -1,50 +1,64 @@
-import '../enums/soundscape_category.dart';
+﻿import '../enums/soundscape_category.dart';
+import '../enums/wave_style.dart';
 import 'visual_theme_config.dart';
 
-/// Entity đại diện cho một chủ đề / track âm thanh trong Endel
+/// Entity đại diện cho một track âm thanh trong Endel.
+///
+/// Cách thêm bài mới:
+/// Chỉ cần khai báo tối thiểu: id, title, subtitle, category, audioFile (hoặc audioPath), tags.
 class SoundscapeItem {
   const SoundscapeItem({
     required this.id,
     required this.title,
     required this.subtitle,
     required this.category,
-    required this.audioPath,
-    required this.themeConfig,
+    this.audioFile,
+    String? audioPath,
+    this.themeOverride,
+    VisualThemeConfig? themeConfig,
     this.isRemote = false,
     this.tags = const [],
-  });
+  })  : _audioPath = audioPath,
+        _themeConfig = themeConfig ?? themeOverride;
 
-  /// Định danh duy nhất (ví dụ: 'relax_water', 'focus_pulse')
   final String id;
-
-  /// Tên hiển thị (ví dụ: 'Deep Relax', 'Focus Horizon')
   final String title;
-
-  /// Mô tả ngắn (ví dụ: 'Calm alpha waves for deep peace')
   final String subtitle;
-
-  /// Phân loại chế độ (Relax, Focus, Sleep, Move)
   final SoundscapeCategory category;
-
-  /// Đường dẫn asset (ví dụ: 'assets/audio/relax.wav') hoặc URL streaming trực tuyến
-  final String audioPath;
-
-  /// Cấu hình hoạt ảnh hiển thị
-  final VisualThemeConfig themeConfig;
-
-  /// Cờ xác định audioPath là URL mạng hay Local Asset
+  final String? audioFile;
+  final String? _audioPath;
+  final VisualThemeConfig? _themeConfig;
+  final VisualThemeConfig? themeOverride;
   final bool isRemote;
-
-  /// Các tag phân loại thêm nếu cần
   final List<String> tags;
+
+  /// Đường dẫn đầy đủ tới file audio.
+  String get audioPath {
+    final explicitPath = _audioPath;
+    if (explicitPath != null && explicitPath.isNotEmpty) {
+      return explicitPath;
+    }
+    final file = audioFile;
+    if (file != null && file.isNotEmpty) {
+      return isRemote ? file : '${category.audioDir}$file';
+    }
+    return '';
+  }
+
+  /// Visual theme thực tế: themeConfig/themeOverride nếu có, ngược lại dùng default của category
+  VisualThemeConfig get themeConfig =>
+      _themeConfig ?? themeOverride ?? category.defaultTheme;
+
+  WaveStyle get waveStyle => themeConfig.waveStyle;
 
   SoundscapeItem copyWith({
     String? id,
     String? title,
     String? subtitle,
     SoundscapeCategory? category,
+    String? audioFile,
     String? audioPath,
-    VisualThemeConfig? themeConfig,
+    VisualThemeConfig? Function()? themeOverride,
     bool? isRemote,
     List<String>? tags,
   }) {
@@ -53,8 +67,10 @@ class SoundscapeItem {
       title: title ?? this.title,
       subtitle: subtitle ?? this.subtitle,
       category: category ?? this.category,
-      audioPath: audioPath ?? this.audioPath,
-      themeConfig: themeConfig ?? this.themeConfig,
+      audioFile: audioFile ?? this.audioFile,
+      audioPath: audioPath ?? _audioPath,
+      themeOverride:
+          themeOverride != null ? themeOverride() : this.themeOverride,
       isRemote: isRemote ?? this.isRemote,
       tags: tags ?? this.tags,
     );
