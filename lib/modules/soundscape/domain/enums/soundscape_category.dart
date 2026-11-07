@@ -125,4 +125,22 @@ enum SoundscapeCategory {
 
   /// Đường dẫn thư mục audio của category: assets/audio/{id}/
   String get audioDir => 'assets/audio/$id/';
+
+  /// Tần số nhịp BPM số học tương ứng
+  int get bpm {
+    switch (this) {
+      case SoundscapeCategory.relax:
+        return 60;
+      case SoundscapeCategory.focus:
+        return 120;
+      case SoundscapeCategory.sleep:
+        return 48;
+      case SoundscapeCategory.activity:
+        return 135;
+      case SoundscapeCategory.move:
+        return 140;
+      case SoundscapeCategory.adhd:
+        return 110;
+    }
+  }
 }

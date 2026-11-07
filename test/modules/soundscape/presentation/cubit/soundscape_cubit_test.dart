@@ -174,6 +174,9 @@ class _FakeAudioPlayerService implements AudioPlayerService {
   Stream<Duration> get positionStream => const Stream<Duration>.empty();
 
   @override
+  Stream<double> get volumeStream => const Stream<double>.empty();
+
+  @override
   Stream<AudioEngineStatus> get statusStream => _statusController.stream;
 
   void _setStatus(AudioEngineStatus status) {

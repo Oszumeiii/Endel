@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:rvc_mobile_application/modules/soundscape/domain/enums/soundscape_category.dart';
+import 'package:rvc_mobile_application/modules/soundscape/domain/enums/wave_style.dart';
 import 'package:rvc_mobile_application/modules/soundscape/presentation/widgets/endel_countdown_clock.dart';
 import 'package:rvc_mobile_application/modules/soundscape/presentation/widgets/endel_timer_selector.dart';
+import 'package:rvc_mobile_application/modules/soundscape/presentation/widgets/endel_visual_selector.dart';
 import 'package:rvc_mobile_application/modules/soundscape/presentation/widgets/soundscape_category_bar.dart';
-import 'package:rvc_mobile_application/modules/soundscape/domain/enums/soundscape_category.dart';
 
 void main() {
   testWidgets('play control invokes the playback callback', (tester) async {
@@ -96,5 +98,39 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(selectedDuration, const Duration(hours: 8));
+  });
+
+  testWidgets('visual selector allows selecting auto and manual styles', (
+    tester,
+  ) async {
+    WaveStyle? selectedStyle = WaveStyle.geometric;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: StatefulBuilder(
+            builder: (context, setState) => EndelVisualSelector(
+              activeWaveStyle: selectedStyle ?? WaveStyle.organic,
+              isAutoVisual: selectedStyle == null,
+              onWaveStyleSelected: (style) {
+                setState(() => selectedStyle = style);
+              },
+            ),
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('AUTO'), findsOneWidget);
+    expect(find.text('ORGANIC'), findsOneWidget);
+    expect(find.text('GEOMETRIC'), findsOneWidget);
+
+    await tester.tap(find.text('ORGANIC'));
+    await tester.pumpAndSettle();
+    expect(selectedStyle, WaveStyle.organic);
+
+    await tester.tap(find.text('AUTO'));
+    await tester.pumpAndSettle();
+    expect(selectedStyle, isNull);
   });
 }

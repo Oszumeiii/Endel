@@ -2,9 +2,14 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../../../domain/entities/visual_theme_config.dart';
 import '../visual_painter_strategy.dart';
+import 'visual_effects_helper.dart';
 
 /// 6. ADHD / CENTERING: Mạng lưới nút cộng hưởng Constellation Mesh
-/// Giúp ổn định chú ý, phân tán nhiễu tâm lý bằng hình học mạng lưới kết nối hài hòa
+/// Tái hiện chuẩn xác phong cách Endel ADHD:
+/// - Các nút thiên thể chuyển động mượt mà trên quỹ đạo Lissajous đa tần số phi lặp lại
+/// - Sợi liên kết xi-náp phát quang tự động theo khoảng cách lân cận (Proximity Synaptic Filaments)
+/// - Quầng sáng tinh vân đa tầng giúp ổn định trường thị giác và điều hòa tâm trí
+/// - Phản hồi năng lượng âm thanh thực tế (Audio Resonance)
 class ConstellationVisualPainter extends VisualPainterStrategy {
   const ConstellationVisualPainter();
 
@@ -17,65 +22,127 @@ class ConstellationVisualPainter extends VisualPainterStrategy {
     required double time,
     required bool isPlaying,
     required VisualThemeConfig config,
+    double activityFactor = 1.0,
+    double audioReactiveFactor = 1.0,
   }) {
-    const nodeCount = 10;
+    // 1. Ánh sáng khí quyển
+    VisualEffectsHelper.drawAtmosphere(
+      canvas,
+      size,
+      center,
+      config.primaryColor,
+      config.accentColor,
+      intensity: activityFactor,
+      audioReactiveFactor: audioReactiveFactor,
+    );
+
+    // 2. Hạt bụi sao
+    VisualEffectsHelper.drawAmbientParticles(
+      canvas,
+      size,
+      time * 0.6,
+      config.primaryColor,
+      intensity: activityFactor * 0.8,
+      audioReactiveFactor: audioReactiveFactor,
+      count: 22,
+    );
+
+    const nodeCount = 14;
     final nodes = <Offset>[];
+    final nodeRadii = <double>[];
 
-    // Tạo các điểm mút trên 2 quỹ đạo elip giao nhau
+    final maxSpanX = size.width * 0.42;
+    final maxSpanY = size.height * 0.42;
+
     for (int i = 0; i < nodeCount; i++) {
-      final angle = (i / nodeCount) * 2 * math.pi + time;
-      final ring = i % 2 == 0 ? 1.0 : 0.65;
-      final waveOffset = isPlaying ? math.sin(time * 2 + i * 1.5) * 0.025 : 0.0;
-      final radiusFactor = 0.4 * ring + waveOffset;
+      final f1 = 0.45 + (i * 0.11);
+      final f2 = 0.38 + (i * 0.09);
+      final p1 = i * 1.6180339887;
+      final p2 = i * 2.7182818284;
 
-      final x = center.dx + size.width * radiusFactor * math.cos(angle);
-      final y =
-          center.dy +
-          size.height *
-              radiusFactor *
-              math.sin(angle) *
-              (i % 2 == 0 ? 0.9 : 1.15);
+      final nx =
+          math.sin(time * f1 + p1) * 0.85 + math.cos(time * 0.25 + p2) * 0.15;
+      final ny =
+          math.cos(time * f2 + p2) * 0.85 + math.sin(time * 0.28 + p1) * 0.15;
+
+      final x = center.dx + nx * maxSpanX;
+      final y = center.dy + ny * maxSpanY;
+
       nodes.add(Offset(x, y));
+      nodeRadii.add(2.0 + (i % 3) * 0.8);
     }
 
-    // Vẽ các đường nối giữa các nút lân cận
-    final linePaint = Paint()
-      ..color = config.primaryColor.withValues(alpha: isPlaying ? 0.22 : 0.09)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 0.9
-      ..isAntiAlias = true;
+    // 3. VẼ CÁC SỢI LIÊN KẾT XI-NÁP PHÁT QUANG (Proximity Synaptic Filaments)
+    final maxConnectDist = math.min(size.width, size.height) * 0.40;
 
     for (int i = 0; i < nodes.length; i++) {
       for (int j = i + 1; j < nodes.length; j++) {
         final dist = (nodes[i] - nodes[j]).distance;
-        if (dist < math.min(size.width, size.height) * 0.55) {
+        if (dist < maxConnectDist) {
+          final proximity = 1.0 - (dist / maxConnectDist);
+          final lineAlpha =
+              ((proximity * proximity) *
+                      0.38 *
+                      (0.35 + 0.65 * activityFactor) *
+                      audioReactiveFactor)
+                  .clamp(0.0, 1.0);
+
+          final linePaint = Paint()
+            ..color = config.primaryColor.withValues(alpha: lineAlpha)
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = 0.8 + proximity * 0.8
+            ..isAntiAlias = true;
+
           canvas.drawLine(nodes[i], nodes[j], linePaint);
         }
       }
     }
 
-    // Vẽ các nút điểm sao
-    final nodePaint = Paint()
-      ..color = config.primaryColor.withValues(alpha: isPlaying ? 0.85 : 0.45)
-      ..style = PaintingStyle.fill;
-
+    // 4. VẼ CÁC NÚT SAO PHÁT QUANG ĐA TẦNG (Celestial Luminous Nodes)
     for (int i = 0; i < nodes.length; i++) {
-      final nodeSize = 2.5 + (i % 3) * 0.8;
-      canvas.drawCircle(nodes[i], nodeSize, nodePaint);
+      final pulse = (math.sin(time * 2.0 + i * 1.2) + 1.0) / 2.0;
+      final radius =
+          (nodeRadii[i] + pulse * 1.0 * activityFactor) *
+          (0.96 + 0.04 * audioReactiveFactor);
+
+      VisualEffectsHelper.drawGlowingPoint(
+        canvas,
+        nodes[i],
+        radius,
+        color: config.primaryColor,
+        glowSigma: 4.5,
+        glowAlpha:
+            ((0.25 + pulse * 0.25) * activityFactor * audioReactiveFactor)
+                .clamp(0.0, 1.0),
+        coreAlpha: (0.95 * activityFactor).clamp(0.0, 1.0),
+        audioReactiveFactor: audioReactiveFactor,
+      );
     }
 
-    // Vòng tròn định vị quỹ đạo trung tâm
+    // 5. VÒNG TRÒN ĐỊNH VỊ TỌA ĐỘ TRUNG TÂM (Harmonic Grounding Orbit)
+    final orbitRadius =
+        math.min(size.width, size.height) *
+        0.36 *
+        (0.98 + 0.02 * audioReactiveFactor);
+    final orbitBreath = (math.sin(time * 0.8) + 1.0) / 2.0;
     final orbitPaint = Paint()
-      ..color = config.primaryColor.withValues(alpha: 0.12)
+      ..color = config.primaryColor.withValues(
+        alpha: ((0.08 + orbitBreath * 0.05) * activityFactor).clamp(0.0, 1.0),
+      )
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 0.8;
-    canvas.drawOval(
-      Rect.fromCenter(
-        center: center,
-        width: size.width * 0.86,
-        height: size.height * 0.86,
-      ),
-      orbitPaint,
+      ..strokeWidth = 0.9;
+    canvas.drawCircle(center, orbitRadius, orbitPaint);
+
+    // Điểm tâm định vị
+    VisualEffectsHelper.drawGlowingPoint(
+      canvas,
+      center,
+      3.2,
+      color: config.primaryColor,
+      glowSigma: 5.0,
+      glowAlpha: (0.35 * activityFactor * audioReactiveFactor).clamp(0.0, 1.0),
+      coreAlpha: (0.9 * activityFactor).clamp(0.0, 1.0),
+      audioReactiveFactor: audioReactiveFactor,
     );
   }
 }

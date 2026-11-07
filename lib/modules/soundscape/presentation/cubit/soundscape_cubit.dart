@@ -28,6 +28,12 @@ class SoundscapeCubit extends Cubit<SoundscapeState> {
 
   final SoundscapeRepository _repository;
   final AudioPlayerService _audioService;
+
+  /// Luồng vị trí audio thực tế phục vụ visualizer đồng bộ hóa nhịp
+  Stream<Duration> get audioPositionStream => _audioService.positionStream;
+
+  /// Luồng âm lượng thực tế phục vụ visualizer phản hồi biên độ
+  Stream<double> get audioVolumeStream => _audioService.volumeStream;
   final Stopwatch _tickerStopwatch = Stopwatch();
 
   StreamSubscription<AudioEngineStatus>? _audioStatusSubscription;

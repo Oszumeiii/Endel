@@ -17,5 +17,7 @@ abstract class VisualPainterStrategy {
     required double time,
     required bool isPlaying,
     required VisualThemeConfig config,
+    double activityFactor = 1.0,
+    double audioReactiveFactor = 1.0,
   });
 }

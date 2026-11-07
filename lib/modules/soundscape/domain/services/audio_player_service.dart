@@ -19,6 +19,9 @@ abstract class AudioPlayerService {
   /// Stream phát ra vị trí hiện tại của bài hát
   Stream<Duration> get positionStream;
 
+  /// Stream phát ra âm lượng thực tế của player (hỗ trợ fade-in / fade-out)
+  Stream<double> get volumeStream => const Stream<double>.empty();
+
   /// Trạng thái hiện tại
   AudioEngineStatus get currentStatus;
 

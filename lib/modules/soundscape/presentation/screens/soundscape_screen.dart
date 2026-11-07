@@ -8,6 +8,7 @@ import '../cubit/soundscape_cubit.dart';
 import '../cubit/soundscape_state.dart';
 import '../widgets/endel_countdown_clock.dart';
 import '../widgets/endel_timer_selector.dart';
+import '../widgets/endel_visual_selector.dart';
 import '../widgets/endel_visualizer.dart';
 import '../widgets/soundscape_category_bar.dart';
 import '../widgets/soundscape_hud_header.dart';
@@ -87,18 +88,24 @@ class _SoundscapeView extends StatelessWidget {
                       bool isPlaying,
                       VisualThemeConfig themeConfig,
                       WaveStyle activeWaveStyle,
+                      int bpm,
                     })
                   >(
                     selector: (state) => (
                       isPlaying: state.isPlaying,
                       themeConfig: state.selectedSoundscape.themeConfig,
                       activeWaveStyle: state.activeWaveStyle,
+                      bpm: state.selectedCategory.bpm,
                     ),
                     builder: (context, visualData) {
+                      final cubit = context.read<SoundscapeCubit>();
                       return EndelVisualizer(
                         isPlaying: visualData.isPlaying,
                         themeConfig: visualData.themeConfig,
                         activeWaveStyle: visualData.activeWaveStyle,
+                        audioPositionStream: cubit.audioPositionStream,
+                        audioVolumeStream: cubit.audioVolumeStream,
+                        bpm: visualData.bpm,
                       );
                     },
                   ),
@@ -182,7 +189,7 @@ class _SoundscapeView extends StatelessWidget {
                                         borderRadius: BorderRadius.circular(16),
                                       ),
                                       child: Text(
-                                        'TAP TO SHOW CONTROLS',
+                                        '',
                                         style: TextStyle(
                                           color: Colors.white.withValues(
                                             alpha: 0.3,
@@ -217,7 +224,29 @@ class _SoundscapeView extends StatelessWidget {
                             child: Column(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                // Bộ chọn thời gian: Chỉ rebuild khi người dùng đổi thời lượng đặt
+                                // 1. Thanh chọn ảnh động: Đưa danh sách xuống bên trên thanh chọn thời gian
+                                BlocSelector<
+                                  SoundscapeCubit,
+                                  SoundscapeState,
+                                  ({WaveStyle activeWaveStyle, bool isAutoVisual})
+                                >(
+                                  selector: (state) => (
+                                    activeWaveStyle: state.activeWaveStyle,
+                                    isAutoVisual: state.isAutoVisual,
+                                  ),
+                                  builder: (context, visualData) {
+                                    return EndelVisualSelector(
+                                      activeWaveStyle: visualData.activeWaveStyle,
+                                      isAutoVisual: visualData.isAutoVisual,
+                                      onWaveStyleSelected: context
+                                          .read<SoundscapeCubit>()
+                                          .setManualWaveStyle,
+                                    );
+                                  },
+                                ),
+                                SizedBox(height: isShort ? 6 : 10),
+
+                                // 2. Bộ chọn thời gian: Chỉ rebuild khi người dùng đổi thời lượng đặt
                                 BlocSelector<
                                   SoundscapeCubit,
                                   SoundscapeState,
@@ -364,15 +393,32 @@ class _SoundscapeTrackSheet extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  '${state.selectedCategory.label.toUpperCase()} SOUNDSCAPES',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 2.0,
-                    fontFamily: 'monospace',
-                  ),
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.08),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.queue_music_rounded,
+                        color: Colors.white,
+                        size: 16,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      '${state.selectedCategory.label.toUpperCase()} SOUNDSCAPES',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 1.8,
+                        fontFamily: 'monospace',
+                      ),
+                    ),
+                  ],
                 ),
                 GestureDetector(
                   onTap: () => Navigator.pop(context),

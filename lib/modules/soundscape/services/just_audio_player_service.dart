@@ -10,8 +10,21 @@ import '../domain/services/audio_player_service.dart';
 /// JustAudio implementation with looping playback, background service, and cancellable fades.
 class JustAudioPlayerService implements AudioPlayerService {
   JustAudioPlayerService({AudioPlayer? player})
-    : _player = player ?? AudioPlayer() {
+    : _player = player ?? _createPlayerWithBoost() {
     _initStreams();
+  }
+
+  static AudioPlayer _createPlayerWithBoost() {
+    final loudnessEnhancer = AndroidLoudnessEnhancer();
+    // just_audio expects decibels here, not millibels.
+    unawaited(loudnessEnhancer.setTargetGain(10.0));
+    unawaited(loudnessEnhancer.setEnabled(true));
+
+    return AudioPlayer(
+      audioPipeline: AudioPipeline(
+        androidAudioEffects: [loudnessEnhancer],
+      ),
+    );
   }
 
   final AudioPlayer _player;
@@ -64,6 +77,9 @@ class JustAudioPlayerService implements AudioPlayerService {
 
   @override
   Stream<Duration> get positionStream => _player.positionStream;
+
+  @override
+  Stream<double> get volumeStream => _player.volumeStream;
 
   @override
   AudioEngineStatus get currentStatus => _currentStatus;
