@@ -44,12 +44,4 @@ const List<SoundscapeItem> activitySoundscapes = [
     audioFile: 'revelation.mp3',
     tags: ['revelation', 'high-energy', 'workout'],
   ),
-  SoundscapeItem(
-    id: 'activity_kinetic',
-    title: 'Kinetic Movement',
-    subtitle: 'High-energy audio pulses keeping you grounded in motion',
-    category: SoundscapeCategory.activity,
-    audioFile: 'activity.wav',
-    tags: ['workout', 'kinetic', 'fitness'],
-  ),
 ];

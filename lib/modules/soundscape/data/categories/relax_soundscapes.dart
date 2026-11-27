@@ -76,12 +76,4 @@ const List<SoundscapeItem> relaxSoundscapes = [
     audioFile: 'song_2.mp3',
     tags: ['harmony', 'balance', 'zen'],
   ),
-  SoundscapeItem(
-    id: 'relax_serenity',
-    title: 'Serenity Waves',
-    subtitle: 'Soft ambient textures for a calmer nervous system',
-    category: SoundscapeCategory.relax,
-    audioFile: 'relax.wav',
-    tags: ['calm', 'ambient', 'alpha waves'],
-  ),
 ];

@@ -92,12 +92,4 @@ const List<SoundscapeItem> moveSoundscapes = [
     audioFile: 'woke2.mp3',
     tags: ['vibrant', 'woke', 'cadence'],
   ),
-  SoundscapeItem(
-    id: 'move_stride',
-    title: 'Urban Stride',
-    subtitle: 'Adaptive tempo pulses for walking and active commuting',
-    category: SoundscapeCategory.move,
-    audioFile: 'move.wav',
-    tags: ['walk', 'commute', 'tempo', 'outdoor'],
-  ),
 ];

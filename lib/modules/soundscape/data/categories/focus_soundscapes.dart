@@ -44,12 +44,4 @@ const List<SoundscapeItem> focusSoundscapes = [
     audioFile: 'florist.mp3',
     tags: ['creative', 'fresh', 'flow'],
   ),
-  SoundscapeItem(
-    id: 'focus_clarity',
-    title: 'Deep Focus',
-    subtitle: 'Steady ambient sound for high cognitive endurance',
-    category: SoundscapeCategory.focus,
-    audioFile: 'focus.wav',
-    tags: ['work', 'study', 'coding', 'pomodoro'],
-  ),
 ];

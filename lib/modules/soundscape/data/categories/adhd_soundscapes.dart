@@ -44,12 +44,4 @@ const List<SoundscapeItem> adhdSoundscapes = [
     audioFile: 'relaxing.mp3',
     tags: ['cocoon', 'sensory', 'orbit'],
   ),
-  SoundscapeItem(
-    id: 'adhd_balance',
-    title: 'Clarity Orbit',
-    subtitle: 'Resonant acoustic balance masking distractions and centering mind',
-    category: SoundscapeCategory.adhd,
-    audioFile: 'adhd.wav',
-    tags: ['adhd', 'neurodiversity', 'calm focus', 'anchor'],
-  ),
 ];

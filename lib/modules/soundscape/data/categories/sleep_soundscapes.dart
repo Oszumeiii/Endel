@@ -52,12 +52,4 @@ const List<SoundscapeItem> sleepSoundscapes = [
     audioFile: 'yoiyami_core_theme.wav',
     tags: ['yoiyami', 'lullaby', 'dusk'],
   ),
-  SoundscapeItem(
-    id: 'sleep_nightfall',
-    title: 'Deep Sleep',
-    subtitle: 'Soft, slow acoustic textures guiding into restorative sleep',
-    category: SoundscapeCategory.sleep,
-    audioFile: 'sleep.wav',
-    tags: ['night', 'delta', 'rest', 'melatonin'],
-  ),
 ];
