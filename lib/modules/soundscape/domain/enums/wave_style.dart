@@ -22,7 +22,8 @@ enum WaveStyle {
   nightSky(
     id: 'night_sky',
     label: 'Night Sky',
-    description: 'Still starfield, crescent moon, and slow celestial constellations',
+    description:
+        'Still starfield, crescent moon, and slow celestial constellations',
     iconData: Icons.nights_stay_outlined,
   ),
 
@@ -56,6 +57,23 @@ enum WaveStyle {
     label: 'Bloom',
     description: 'Luminous woven petals rotating in meditative symmetry',
     iconData: Icons.filter_vintage_outlined,
+  ),
+
+  /// Mạng lưới nút phát sáng chuyển động theo quỹ đạo và liên kết gần nhau
+  mesh(
+    id: 'mesh',
+    label: 'Mesh',
+    description:
+        'Glowing constellation nodes linked by proximity and resonance',
+    iconData: Icons.hub_rounded,
+  ),
+
+  /// Vòng sóng radar lan tỏa theo nhịp và quét các điểm định vị
+  pulse(
+    id: 'pulse',
+    label: 'Pulse',
+    description: 'Cadence radar rings and sweeping beacons pulsing in rhythm',
+    iconData: Icons.radar_rounded,
   );
 
   const WaveStyle({
@@ -88,12 +106,15 @@ enum WaveStyle {
       case 'silk':
         return WaveStyle.silk;
       case 'activity':
-      case 'pulse':
         return WaveStyle.activity;
       case 'cascade':
         return WaveStyle.cascade;
       case 'bloom':
         return WaveStyle.bloom;
+      case 'mesh':
+        return WaveStyle.mesh;
+      case 'pulse':
+        return WaveStyle.pulse;
       default:
         return WaveStyle.aurora;
     }

@@ -5,6 +5,8 @@ import 'drawings/bloom_painter.dart';
 import 'drawings/cascade_painter.dart';
 import 'drawings/constellation_painter.dart';
 import 'drawings/night_sky_painter.dart';
+import 'drawings/pulse_painter.dart';
+import 'drawings/mesh_painter.dart';
 import 'drawings/silk_painter.dart';
 import 'visual_painter_strategy.dart';
 
@@ -20,6 +22,8 @@ class VisualPainterFactory {
   static const _silkPainter = SilkVisualPainter();
   static const _cascadePainter = CascadeVisualPainter();
   static const _bloomPainter = BloomVisualPainter();
+  static const _meshPainter = MeshVisualPainter();
+  static const _pulsePainter = PulseVisualPainter();
 
   /// Lấy painter theo kiểu hoạt ảnh được yêu cầu
   static VisualPainterStrategy getPainter(WaveStyle style) {
@@ -38,6 +42,10 @@ class VisualPainterFactory {
         return _cascadePainter;
       case WaveStyle.bloom:
         return _bloomPainter;
+      case WaveStyle.mesh:
+        return _meshPainter;
+      case WaveStyle.pulse:
+        return _pulsePainter;
     }
   }
 }

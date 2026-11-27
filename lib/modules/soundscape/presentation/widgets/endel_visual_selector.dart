@@ -58,6 +58,8 @@ class EndelVisualSelector extends StatelessWidget {
       WaveStyle.silk => 'SILK',
       WaveStyle.cascade => 'CASCADE',
       WaveStyle.bloom => 'BLOOM',
+      WaveStyle.mesh => 'MESH',
+      WaveStyle.pulse => 'PULSE',
     };
   }
 
