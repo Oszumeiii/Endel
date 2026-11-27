@@ -1,9 +1,7 @@
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:rx_shared_preferences/rx_shared_preferences.dart';
 import 'package:uuid/uuid.dart';
-
 
 class _Keys {
   static const lang = 'lang';
@@ -19,6 +17,9 @@ class _Keys {
   static const appLaunchCount = 'app_launch_count';
   static const deviceName = 'device_name';
   static const userDefault = 'user_default';
+  static const soundscapeCategory = 'soundscape_category';
+  static const soundscapeTrackPrefix = 'soundscape_track_';
+  static const soundscapeWaveStyle = 'soundscape_wave_style';
 }
 
 class Storage {
@@ -147,6 +148,26 @@ class Storage {
   }
 
   static bool get isSecondLaunch => appLaunchCount == 2;
+
+  static String? get soundscapeCategoryId =>
+      _get<String>(_Keys.soundscapeCategory);
+
+  static Future<void> setSoundscapeCategoryId(String? categoryId) =>
+      _set(_Keys.soundscapeCategory, categoryId);
+
+  static String? soundscapeTrackId(String categoryId) =>
+      _get<String>('${_Keys.soundscapeTrackPrefix}$categoryId');
+
+  static Future<void> setSoundscapeTrackId(
+    String categoryId,
+    String? soundscapeId,
+  ) => _set('${_Keys.soundscapeTrackPrefix}$categoryId', soundscapeId);
+
+  static String? get soundscapeWaveStyleId =>
+      _get<String>(_Keys.soundscapeWaveStyle);
+
+  static Future<void> setSoundscapeWaveStyleId(String? waveStyleId) =>
+      _set(_Keys.soundscapeWaveStyle, waveStyleId);
 
   static String? get deviceName => _get(_Keys.deviceName);
 

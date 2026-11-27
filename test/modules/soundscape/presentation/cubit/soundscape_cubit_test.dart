@@ -6,13 +6,27 @@ import 'package:rvc_mobile_application/modules/soundscape/domain/enums/soundscap
 import 'package:rvc_mobile_application/modules/soundscape/domain/enums/wave_style.dart';
 import 'package:rvc_mobile_application/modules/soundscape/domain/services/audio_player_service.dart';
 import 'package:rvc_mobile_application/modules/soundscape/presentation/cubit/soundscape_cubit.dart';
+import 'package:rvc_mobile_application/data/local/shared_prefs/storage.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter/services.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   late _FakeAudioPlayerService audioService;
   late SoundscapeCubit cubit;
 
-  setUp(() {
+  setUpAll(() async {
+    _mockSharedPreferences();
+    await Storage.setup();
+  });
+
+  setUp(() async {
+    await Storage.setSoundscapeCategoryId(null);
+    await Storage.setSoundscapeWaveStyleId(null);
+    for (final category in SoundscapeCategory.values) {
+      await Storage.setSoundscapeTrackId(category.id, null);
+    }
     audioService = _FakeAudioPlayerService();
     cubit = SoundscapeCubit(audioService: audioService);
   });
@@ -137,20 +151,75 @@ void main() {
     expect(cubit.state.selectedSoundscape.category, SoundscapeCategory.adhd);
   });
 
-  test('manual visual selection overrides track theme and reverts to auto cleanly', () {
+  test('returns to the last selected track in each category', () async {
+    final selectedTrack = cubit.state.availableSoundscapes.last;
+    await cubit.selectSoundscape(selectedTrack);
+    await cubit.selectCategory(SoundscapeCategory.focus);
+    await cubit.selectCategory(selectedTrack.category);
+
+    expect(cubit.state.selectedSoundscape.id, selectedTrack.id);
+  });
+
+  test('restores selected category, track, and manual visual style', () async {
+    await cubit.selectCategory(SoundscapeCategory.activity);
+    final selectedTrack = cubit.state.availableSoundscapes.last;
+    await cubit.selectSoundscape(selectedTrack);
+    await cubit.setManualWaveStyle(WaveStyle.mesh);
+
+    final restoredCubit = SoundscapeCubit(
+      audioService: _FakeAudioPlayerService(),
+    );
+    addTearDown(restoredCubit.close);
+
+    expect(restoredCubit.state.selectedCategory, selectedTrack.category);
+    expect(restoredCubit.state.selectedSoundscape.id, selectedTrack.id);
+    expect(restoredCubit.state.manualWaveStyle, WaveStyle.mesh);
+  });
+
+  test('manual visual selection overrides track theme and reverts to auto cleanly', () async {
     expect(cubit.state.isAutoVisual, isTrue);
     expect(cubit.state.activeWaveStyle, cubit.state.selectedSoundscape.themeConfig.waveStyle);
 
-    cubit.setManualWaveStyle(WaveStyle.constellation);
+    await cubit.setManualWaveStyle(WaveStyle.constellation);
     expect(cubit.state.isAutoVisual, isFalse);
     expect(cubit.state.manualWaveStyle, WaveStyle.constellation);
     expect(cubit.state.activeWaveStyle, WaveStyle.constellation);
 
-    cubit.setManualWaveStyle(null);
+    await cubit.setManualWaveStyle(null);
     expect(cubit.state.isAutoVisual, isTrue);
     expect(cubit.state.manualWaveStyle, isNull);
     expect(cubit.state.activeWaveStyle, cubit.state.selectedSoundscape.themeConfig.waveStyle);
   });
+}
+
+void _mockSharedPreferences() {
+  const channel = MethodChannel('plugins.flutter.io/shared_preferences');
+  final preferences = <String, Object>{};
+  TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+      .setMockMethodCallHandler(channel, (call) async {
+        final arguments = call.arguments is Map
+            ? Map<String, Object?>.from(call.arguments as Map)
+            : <String, Object?>{};
+        switch (call.method) {
+          case 'getAll':
+            return preferences;
+          case 'remove':
+            preferences.remove(arguments['key'] as String);
+            return true;
+          case 'clear':
+            preferences.clear();
+            return true;
+          case 'setBool':
+          case 'setDouble':
+          case 'setInt':
+          case 'setString':
+          case 'setStringList':
+            preferences[arguments['key'] as String] =
+                arguments['value'] as Object;
+            return true;
+        }
+        return null;
+      });
 }
 
 Future<void> _flushStatusEvents() async {

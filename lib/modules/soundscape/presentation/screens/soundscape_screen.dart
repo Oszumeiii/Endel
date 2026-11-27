@@ -418,8 +418,8 @@ class _SoundscapeTrackSheet extends StatelessWidget {
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 10),
                     child: GestureDetector(
-                      onTap: () {
-                        cubit.selectSoundscape(item);
+                      onTap: () async {
+                        await cubit.selectSoundscape(item);
                         Navigator.pop(context);
                       },
                       behavior: HitTestBehavior.opaque,

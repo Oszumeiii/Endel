@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:rvc_mobile_application/data/local/shared_prefs/storage.dart';
 
 import '../../data/repositories/soundscape_repository_impl.dart';
 import '../../domain/entities/soundscape_item.dart';
@@ -45,11 +46,31 @@ class SoundscapeCubit extends Cubit<SoundscapeState> {
 
   static SoundscapeState _createInitialState(SoundscapeRepository repo) {
     final defaultItem = repo.getDefaultSoundscape();
-    final items = repo.getByCategory(defaultItem.category);
+    final savedCategory = SoundscapeCategory.values.where(
+      (category) => category.id == Storage.soundscapeCategoryId,
+    );
+    final preferredCategory = savedCategory.isEmpty
+        ? defaultItem.category
+        : savedCategory.first;
+    final preferredItems = repo.getByCategory(preferredCategory);
+    final category = preferredItems.isEmpty
+        ? defaultItem.category
+        : preferredCategory;
+    final items = repo.getByCategory(category);
+    final savedTrackId = Storage.soundscapeTrackId(category.id);
+    final selectedSoundscape = items.firstWhere(
+      (item) => item.id == savedTrackId,
+      orElse: () => items.first,
+    );
+    final savedWaveStyleId = Storage.soundscapeWaveStyleId;
+    final manualWaveStyle = WaveStyle.values.where(
+      (style) => style.id == savedWaveStyleId,
+    );
     return SoundscapeState(
-      selectedSoundscape: defaultItem,
+      selectedSoundscape: selectedSoundscape,
       availableSoundscapes: items,
-      selectedCategory: defaultItem.category,
+      selectedCategory: category,
+      manualWaveStyle: manualWaveStyle.isEmpty ? null : manualWaveStyle.first,
     );
   }
 
@@ -83,7 +104,12 @@ class SoundscapeCubit extends Cubit<SoundscapeState> {
     final items = _repository.getByCategory(category);
     if (items.isEmpty) return;
 
-    await _selectSoundscape(items.first, items: items);
+    final savedTrackId = Storage.soundscapeTrackId(category.id);
+    final selectedTrack = items.firstWhere(
+      (item) => item.id == savedTrackId,
+      orElse: () => items.first,
+    );
+    await _selectSoundscape(selectedTrack, items: items);
   }
 
   /// Chọn một soundscape cụ thể trong danh mục.
@@ -97,6 +123,8 @@ class SoundscapeCubit extends Cubit<SoundscapeState> {
     List<SoundscapeItem>? items,
   }) async {
     final wasPlaying = state.isPlaying;
+    await Storage.setSoundscapeCategoryId(soundscape.category.id);
+    await Storage.setSoundscapeTrackId(soundscape.category.id, soundscape.id);
     emit(
       state.copyWith(
         selectedSoundscape: soundscape,
@@ -235,7 +263,8 @@ class SoundscapeCubit extends Cubit<SoundscapeState> {
   }
 
   /// Thiết lập kiểu ảnh động thủ công. Truyền null để tự động chọn theo track (Auto).
-  void setManualWaveStyle(WaveStyle? waveStyle) {
+  Future<void> setManualWaveStyle(WaveStyle? waveStyle) async {
+    await Storage.setSoundscapeWaveStyleId(waveStyle?.id);
     emit(state.copyWith(manualWaveStyle: () => waveStyle));
   }
 

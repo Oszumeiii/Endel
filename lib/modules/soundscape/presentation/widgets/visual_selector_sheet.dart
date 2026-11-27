@@ -108,8 +108,8 @@ class VisualSelectorSheet extends StatelessWidget {
                     icon: Icons.auto_awesome_rounded,
                     isSelected: isAuto,
                     badgeText: 'RECOMMENDED',
-                    onTap: () {
-                      cubit.setManualWaveStyle(null);
+                    onTap: () async {
+                      await cubit.setManualWaveStyle(null);
                       Navigator.pop(context);
                     },
                   ),
@@ -141,9 +141,11 @@ class VisualSelectorSheet extends StatelessWidget {
                         subtitle: style.description,
                         icon: style.iconData,
                         isSelected: isExplicitlySelected,
-                        badgeText: isAuto && activeStyle == style ? 'ACTIVE VIA AUTO' : null,
-                        onTap: () {
-                          cubit.setManualWaveStyle(style);
+                        badgeText: isAuto && activeStyle == style
+                            ? 'ACTIVE VIA AUTO'
+                            : null,
+                        onTap: () async {
+                          await cubit.setManualWaveStyle(style);
                           Navigator.pop(context);
                         },
                       ),
