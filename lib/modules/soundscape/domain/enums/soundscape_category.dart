@@ -80,7 +80,7 @@ enum SoundscapeCategory {
     circadianPhase: 'PHYSICAL CADENCE',
     description: 'Adaptive tempo pulses for walking, sports and commute',
     defaultTheme: VisualThemeConfig(
-      waveStyle: WaveStyle.cascade,
+      waveStyle: WaveStyle.pulse,
       primaryColor: Color(0xFFDCECEB),
       accentColor: Color(0xFF4F8A8B),
       waveSpeed: 1.3,
@@ -95,7 +95,7 @@ enum SoundscapeCategory {
     circadianPhase: 'CALM & STEADY',
     description: 'Calms restless minds and supports steady attention',
     defaultTheme: VisualThemeConfig(
-      waveStyle: WaveStyle.constellation,
+      waveStyle: WaveStyle.silk,
       primaryColor: Color(0xFFE8EAF6),
       accentColor: Color(0xFF7986CB),
       waveSpeed: 1.15,
