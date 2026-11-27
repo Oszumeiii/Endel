@@ -1,0 +1,103 @@
+import '../../domain/entities/soundscape_item.dart';
+import '../../domain/enums/soundscape_category.dart';
+
+/// ─── MOVE ───────────────────────────────────────────────────────────────────
+/// 📁 assets/audio/move/ | Visual: radar pulse | 140 BPM
+const List<SoundscapeItem> moveSoundscapes = [
+  SoundscapeItem(
+    id: 'move_beatnik',
+    title: 'Beatnik Stride',
+    subtitle: 'Steady syncopated stride for brisk walking',
+    category: SoundscapeCategory.move,
+    audioFile: 'beatnik.mp3',
+    tags: ['walk', 'stride', 'beat'],
+  ),
+  SoundscapeItem(
+    id: 'move_billion',
+    title: 'Billion',
+    subtitle: 'Uplifting rhythmic drive for everyday commutes',
+    category: SoundscapeCategory.move,
+    audioFile: 'billion.mp3',
+    tags: ['commute', 'drive', 'uptempo'],
+  ),
+  SoundscapeItem(
+    id: 'move_fakie_dakie',
+    title: 'Fakie Dakie',
+    subtitle: 'Playful cadence keeping steps light and energized',
+    category: SoundscapeCategory.move,
+    audioFile: 'fakie_dakie.mp3',
+    tags: ['cadence', 'steps', 'light'],
+  ),
+  SoundscapeItem(
+    id: 'move_farm',
+    title: 'Farm Trail',
+    subtitle: 'Open acoustic rhythm for outdoor movement',
+    category: SoundscapeCategory.move,
+    audioFile: 'farm.mp3',
+    tags: ['outdoor', 'trail', 'motion'],
+  ),
+  SoundscapeItem(
+    id: 'move_moments',
+    title: 'Moments Flow',
+    subtitle: 'Flowing motion textures for active travel',
+    category: SoundscapeCategory.move,
+    audioFile: 'moments.mp3',
+    tags: ['travel', 'motion', 'flow'],
+  ),
+  SoundscapeItem(
+    id: 'move_rush',
+    title: 'Rush Tempo',
+    subtitle: 'High-tempo dynamic beat for workouts and runs',
+    category: SoundscapeCategory.move,
+    audioFile: 'rush.mp3',
+    tags: ['run', 'workout', 'rush'],
+  ),
+  SoundscapeItem(
+    id: 'move_sakuriasis',
+    title: 'Sakuriasis',
+    subtitle: 'Breezy harmonic pulse for outdoor strolls',
+    category: SoundscapeCategory.move,
+    audioFile: 'sakuriasis.mp3',
+    tags: ['breeze', 'stroll', 'pulse'],
+  ),
+  SoundscapeItem(
+    id: 'move_trailer',
+    title: 'Trailer Cadence',
+    subtitle: 'Steadfast tempo pulse for continuous endurance',
+    category: SoundscapeCategory.move,
+    audioFile: 'trailer.mp3',
+    tags: ['endurance', 'tempo', 'outdoor'],
+  ),
+  SoundscapeItem(
+    id: 'move_vox',
+    title: 'Vox Resonance',
+    subtitle: 'Textured vocal resonance driving steady pace',
+    category: SoundscapeCategory.move,
+    audioFile: 'vox.mp3',
+    tags: ['vox', 'vocal', 'pace'],
+  ),
+  SoundscapeItem(
+    id: 'move_wealthy3',
+    title: 'Wealthy Rhythm',
+    subtitle: 'Smooth rhythmic groove for confident strides',
+    category: SoundscapeCategory.move,
+    audioFile: 'wealthy3.mp3',
+    tags: ['groove', 'strides', 'urban'],
+  ),
+  SoundscapeItem(
+    id: 'move_woke2',
+    title: 'Woke Beat',
+    subtitle: 'Vibrant cadence waking up physical energy',
+    category: SoundscapeCategory.move,
+    audioFile: 'woke2.mp3',
+    tags: ['vibrant', 'woke', 'cadence'],
+  ),
+  SoundscapeItem(
+    id: 'move_stride',
+    title: 'Urban Stride',
+    subtitle: 'Adaptive tempo pulses for walking and active commuting',
+    category: SoundscapeCategory.move,
+    audioFile: 'move.wav',
+    tags: ['walk', 'commute', 'tempo', 'outdoor'],
+  ),
+];

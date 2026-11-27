@@ -7,26 +7,38 @@ import 'package:just_audio_background/just_audio_background.dart';
 import '../domain/entities/soundscape_item.dart';
 import '../domain/services/audio_player_service.dart';
 
-/// JustAudio implementation with looping playback, background service, and cancellable fades.
+/// JustAudio implementation with looping playback, background service, volume boost,
+/// and cancellable fades supporting both MP3 and WAV files seamlessly.
 class JustAudioPlayerService implements AudioPlayerService {
-  JustAudioPlayerService({AudioPlayer? player})
-    : _player = player ?? _createPlayerWithBoost() {
+  JustAudioPlayerService({
+    AudioPlayer? player,
+    AndroidLoudnessEnhancer? loudnessEnhancer,
+  })  : _loudnessEnhancer = loudnessEnhancer ?? AndroidLoudnessEnhancer(),
+        _player = player ?? _createPlayerWithBoost(loudnessEnhancer ?? AndroidLoudnessEnhancer()) {
     _initStreams();
+    _applyAudioBoost();
   }
 
-  static AudioPlayer _createPlayerWithBoost() {
-    final loudnessEnhancer = AndroidLoudnessEnhancer();
-    // just_audio expects decibels here, not millibels.
-    unawaited(loudnessEnhancer.setTargetGain(10.0));
+  /// Target gain in decibels for Android hardware loudness enhancer (+18 dB boost)
+  static const double _targetGainDb = 18.0;
+
+  /// Volume gain multiplier (+25% gain boost for higher output volume)
+  static const double _volumeGainMultiplier = 1.25;
+
+  static AudioPlayer _createPlayerWithBoost(AndroidLoudnessEnhancer loudnessEnhancer) {
+    unawaited(loudnessEnhancer.setTargetGain(_targetGainDb));
     unawaited(loudnessEnhancer.setEnabled(true));
 
     return AudioPlayer(
       audioPipeline: AudioPipeline(
         androidAudioEffects: [loudnessEnhancer],
       ),
+      handleAudioSessionActivation: true,
+      androidApplyAudioAttributes: true,
     );
   }
 
+  final AndroidLoudnessEnhancer _loudnessEnhancer;
   final AudioPlayer _player;
   final StreamController<AudioEngineStatus> _statusController =
       StreamController<AudioEngineStatus>.broadcast();
@@ -36,6 +48,15 @@ class JustAudioPlayerService implements AudioPlayerService {
   String? _loadedSoundscapeId;
   int _fadeGeneration = 0;
   bool _errorLatched = false;
+
+  Future<void> _applyAudioBoost() async {
+    try {
+      await _loudnessEnhancer.setEnabled(true);
+      await _loudnessEnhancer.setTargetGain(_targetGainDb);
+    } catch (e) {
+      debugPrint('[JustAudioPlayerService] Loudness enhancer activation error: $e');
+    }
+  }
 
   void _initStreams() {
     _playerStateSubscription = _player.playerStateStream.listen(
@@ -110,9 +131,14 @@ class JustAudioPlayerService implements AudioPlayerService {
         artist: soundscape.subtitle,
       );
 
-      final AudioSource audioSource = soundscape.isRemote
-          ? AudioSource.uri(Uri.parse(soundscape.audioPath), tag: mediaItem)
-          : AudioSource.asset(soundscape.audioPath, tag: mediaItem);
+      final AudioSource audioSource;
+      if (soundscape.isRemote) {
+        audioSource = AudioSource.uri(Uri.parse(soundscape.audioPath), tag: mediaItem);
+      } else {
+        // Hỗ trợ mượt mà cả mp3 lẫn wav, tự động encode ký tự đặc biệt nếu có
+        final safeUri = Uri.parse(Uri.encodeFull('asset:///${soundscape.audioPath}'));
+        audioSource = AudioSource.uri(safeUri, tag: mediaItem);
+      }
 
       await _player.setAudioSource(audioSource);
       _loadedSoundscapeId = soundscape.id;
@@ -121,6 +147,7 @@ class JustAudioPlayerService implements AudioPlayerService {
       _startPlayer();
       _updateStatus(AudioEngineStatus.playing);
       _fadeVolumeInBackground(fadeInDuration);
+      unawaited(_applyAudioBoost());
     } catch (error, stackTrace) {
       debugPrint(
         '[JustAudioPlayerService] Failed to load or play soundscape: '
@@ -144,7 +171,7 @@ class JustAudioPlayerService implements AudioPlayerService {
 
   void _fadeVolumeInBackground(Duration duration) {
     unawaited(
-      _fadeVolume(from: _player.volume, to: 1, duration: duration).catchError((
+      _fadeVolume(from: _player.volume, to: _volumeGainMultiplier, duration: duration).catchError((
         Object error,
         StackTrace stackTrace,
       ) {
@@ -169,7 +196,7 @@ class JustAudioPlayerService implements AudioPlayerService {
         );
       }
       await _player.pause();
-      await _player.setVolume(1);
+      await _player.setVolume(_volumeGainMultiplier);
       _updateStatus(AudioEngineStatus.paused);
     } catch (error, stackTrace) {
       debugPrint('[JustAudioPlayerService] Pause failed: $error\n$stackTrace');
@@ -191,6 +218,7 @@ class JustAudioPlayerService implements AudioPlayerService {
       _startPlayer();
       _updateStatus(AudioEngineStatus.playing);
       _fadeVolumeInBackground(const Duration(milliseconds: 600));
+      unawaited(_applyAudioBoost());
     } catch (error, stackTrace) {
       debugPrint('[JustAudioPlayerService] Resume failed: $error\n$stackTrace');
       _updateStatus(AudioEngineStatus.error);
@@ -232,7 +260,8 @@ class JustAudioPlayerService implements AudioPlayerService {
   @override
   Future<void> setVolume(double volume) async {
     _cancelFade();
-    await _player.setVolume(volume.clamp(0.0, 1.0).toDouble());
+    final target = (volume * _volumeGainMultiplier).clamp(0.0, _volumeGainMultiplier);
+    await _player.setVolume(target.toDouble());
   }
 
   void _cancelFade() {
@@ -247,7 +276,7 @@ class JustAudioPlayerService implements AudioPlayerService {
   }) async {
     final generation = ++_fadeGeneration;
     if (duration <= Duration.zero) {
-      await _player.setVolume(to.clamp(0.0, 1.0).toDouble());
+      await _player.setVolume(to.clamp(0.0, _volumeGainMultiplier).toDouble());
       return;
     }
 
@@ -261,7 +290,7 @@ class JustAudioPlayerService implements AudioPlayerService {
       if (generation != _fadeGeneration) return;
       final progress = step / steps;
       final volume = from + ((to - from) * progress);
-      await _player.setVolume(volume.clamp(0.0, 1.0).toDouble());
+      await _player.setVolume(volume.clamp(0.0, _volumeGainMultiplier).toDouble());
     }
   }
 
