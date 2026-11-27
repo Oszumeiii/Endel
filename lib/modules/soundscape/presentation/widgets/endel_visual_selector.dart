@@ -51,13 +51,13 @@ class EndelVisualSelector extends StatelessWidget {
 
   String _getShortLabel(WaveStyle style) {
     return switch (style) {
-      WaveStyle.organic => 'ORGANIC',
-      WaveStyle.geometric => 'GEOMETRIC',
-      WaveStyle.breathing => 'BREATHING',
+      WaveStyle.aurora => 'AURORA',
+      WaveStyle.constellation => 'CONSTELLATION',
+      WaveStyle.nightSky => 'NIGHT SKY',
       WaveStyle.activity => 'KINETIC',
-      WaveStyle.pulse => 'PULSE',
-      WaveStyle.constellation => 'MESH',
-      WaveStyle.ripples => 'RIPPLES',
+      WaveStyle.silk => 'SILK',
+      WaveStyle.cascade => 'CASCADE',
+      WaveStyle.bloom => 'BLOOM',
     };
   }
 

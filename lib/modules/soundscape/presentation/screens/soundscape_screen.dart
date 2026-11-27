@@ -168,42 +168,12 @@ class _SoundscapeView extends StatelessWidget {
 
                     // 3. PHẦN GIỮA: VÙNG CHẠM CHUYỂN ĐỔI CHẾ ĐỘ ZEN MODE
                     Expanded(
-                      child: BlocSelector<SoundscapeCubit, SoundscapeState, bool>(
-                        selector: (state) => state.isControlsVisible,
-                        builder: (context, isControlsVisible) {
-                          final cubit = context.read<SoundscapeCubit>();
-                          return GestureDetector(
-                            onTap: cubit.toggleControlsVisibility,
-                            behavior: HitTestBehavior.opaque,
-                            child: Center(
-                              child: !isControlsVisible
-                                  ? Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 14,
-                                        vertical: 6,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: Colors.black.withValues(
-                                          alpha: 0.3,
-                                        ),
-                                        borderRadius: BorderRadius.circular(16),
-                                      ),
-                                      child: Text(
-                                        '',
-                                        style: TextStyle(
-                                          color: Colors.white.withValues(
-                                            alpha: 0.3,
-                                          ),
-                                          fontSize: 9,
-                                          letterSpacing: 2.0,
-                                          fontFamily: 'monospace',
-                                        ),
-                                      ),
-                                    )
-                                  : const SizedBox.shrink(),
-                            ),
-                          );
-                        },
+                      child: GestureDetector(
+                        onTap: context
+                            .read<SoundscapeCubit>()
+                            .toggleControlsVisibility,
+                        behavior: HitTestBehavior.opaque,
+                        child: const SizedBox.expand(),
                       ),
                     ),
 

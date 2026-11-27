@@ -141,10 +141,10 @@ void main() {
     expect(cubit.state.isAutoVisual, isTrue);
     expect(cubit.state.activeWaveStyle, cubit.state.selectedSoundscape.themeConfig.waveStyle);
 
-    cubit.setManualWaveStyle(WaveStyle.geometric);
+    cubit.setManualWaveStyle(WaveStyle.constellation);
     expect(cubit.state.isAutoVisual, isFalse);
-    expect(cubit.state.manualWaveStyle, WaveStyle.geometric);
-    expect(cubit.state.activeWaveStyle, WaveStyle.geometric);
+    expect(cubit.state.manualWaveStyle, WaveStyle.constellation);
+    expect(cubit.state.activeWaveStyle, WaveStyle.constellation);
 
     cubit.setManualWaveStyle(null);
     expect(cubit.state.isAutoVisual, isTrue);

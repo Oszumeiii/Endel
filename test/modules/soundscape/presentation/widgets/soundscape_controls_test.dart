@@ -103,14 +103,14 @@ void main() {
   testWidgets('visual selector allows selecting auto and manual styles', (
     tester,
   ) async {
-    WaveStyle? selectedStyle = WaveStyle.geometric;
+    WaveStyle? selectedStyle = WaveStyle.constellation;
 
     await tester.pumpWidget(
       MaterialApp(
         home: Scaffold(
           body: StatefulBuilder(
             builder: (context, setState) => EndelVisualSelector(
-              activeWaveStyle: selectedStyle ?? WaveStyle.organic,
+              activeWaveStyle: selectedStyle ?? WaveStyle.aurora,
               isAutoVisual: selectedStyle == null,
               onWaveStyleSelected: (style) {
                 setState(() => selectedStyle = style);
@@ -122,12 +122,12 @@ void main() {
     );
 
     expect(find.text('AUTO'), findsOneWidget);
-    expect(find.text('ORGANIC'), findsOneWidget);
-    expect(find.text('GEOMETRIC'), findsOneWidget);
+    expect(find.text('AURORA'), findsOneWidget);
+    expect(find.text('CONSTELLATION'), findsOneWidget);
 
-    await tester.tap(find.text('ORGANIC'));
+    await tester.tap(find.text('AURORA'));
     await tester.pumpAndSettle();
-    expect(selectedStyle, WaveStyle.organic);
+    expect(selectedStyle, WaveStyle.aurora);
 
     await tester.tap(find.text('AUTO'));
     await tester.pumpAndSettle();

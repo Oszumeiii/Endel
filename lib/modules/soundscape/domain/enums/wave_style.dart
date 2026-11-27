@@ -2,28 +2,28 @@ import 'package:flutter/material.dart';
 
 /// Kiểu hiển thị hình ảnh động của Endel Visualizer (đối chiếu chuẩn https://endel.io)
 enum WaveStyle {
-  /// Sóng uốn lượn mềm mại đa hài (dành cho Relax / Ambient)
-  organic(
-    id: 'organic',
-    label: 'Organic Waves',
-    description: 'Harmonic flowing ribbons that calm the nervous system',
+  /// Mảng ánh sáng màu lớn, mờ, trôi chậm và hòa vào nhau (dành cho Relax / Ambient)
+  aurora(
+    id: 'aurora',
+    label: 'Aurora',
+    description: 'Soft drifting color fields blending into tranquil light',
     iconData: Icons.waves_rounded,
   ),
 
-  /// Khối đa giác góc cạnh, xoay đảo chiều kỹ thuật (dành cho Focus)
-  geometric(
-    id: 'geometric',
-    label: 'Geometric Crystals',
-    description: 'Precision multifaceted polygons enhancing cognitive focus',
-    iconData: Icons.hexagon_outlined,
+  /// Bầu trời các chấm nối với nhau như đồ thị trôi chậm, tự nối và ngắt (dành cho Focus / ADHD)
+  constellation(
+    id: 'constellation',
+    label: 'Constellation',
+    description: 'Drifting star-like nodes forming quiet harmonic connections',
+    iconData: Icons.hub_outlined,
   ),
 
-  /// Quầng sáng phập phồng theo nhịp thở êm dịu (dành cho Sleep)
-  breathing(
-    id: 'breathing',
-    label: 'Breathing Aura',
-    description: 'Slow rhythmic luminous pulsations for deep delta rest',
-    iconData: Icons.album_outlined,
+  /// Trời đêm đầy sao, trăng khuyết và các chòm sao nối vạch nhẹ nhàng (dành cho Sleep)
+  nightSky(
+    id: 'night_sky',
+    label: 'Night Sky',
+    description: 'Still starfield, crescent moon, and slow celestial constellations',
+    iconData: Icons.nights_stay_outlined,
   ),
 
   /// Dải sóng động học và luồng quỹ đạo năng lượng (dành cho Activity)
@@ -34,28 +34,28 @@ enum WaveStyle {
     iconData: Icons.motion_photos_on_rounded,
   ),
 
-  /// Xung radar lan tỏa theo nhịp tuần hoàn (dành cho Move)
-  pulse(
-    id: 'pulse',
-    label: 'Radar Pulse',
-    description: 'Concentric cadence rings aligning physical rhythm and tempo',
-    iconData: Icons.radio_button_checked_rounded,
-  ),
-
-  /// Mạng lưới nút dao động cộng hưởng liên kết (dành cho ADHD / Centering)
-  constellation(
-    id: 'constellation',
-    label: 'Constellation Mesh',
-    description: 'Harmonically connected nodes stabilizing scattered thoughts',
-    iconData: Icons.hub_outlined,
-  ),
-
-  /// Sóng gợn đồng tâm lan tỏa mềm mại (dành cho Nature / Water)
-  ripples(
-    id: 'ripples',
-    label: 'Water Ripples',
-    description: 'Gentle droplet concentric wavelets evoking natural tranquility',
+  /// Nhiều sợi mảnh song song lệch pha tạo dải lụa xoắn 3D (dành cho Nature / Silk)
+  silk(
+    id: 'silk',
+    label: 'Silk',
+    description: 'Delicate braided silk threads flowing in harmonic motion',
     iconData: Icons.blur_on_rounded,
+  ),
+
+  /// Các sợi mảnh chạy dọc buông xuống như rèm ánh sáng xoắn nhẹ
+  cascade(
+    id: 'cascade',
+    label: 'Cascade',
+    description: 'Vertical light curtains swaying in slow harmonic currents',
+    iconData: Icons.waterfall_chart_rounded,
+  ),
+
+  /// Họ sợi mảnh xếp thành đóa hoa / quả cầu string-art xoay chậm trong không gian
+  bloom(
+    id: 'bloom',
+    label: 'Bloom',
+    description: 'Luminous woven petals rotating in meditative symmetry',
+    iconData: Icons.filter_vintage_outlined,
   );
 
   const WaveStyle({
@@ -69,4 +69,33 @@ enum WaveStyle {
   final String label;
   final String description;
   final IconData iconData;
+
+  /// Ánh xạ id cũ sang enum mới để tránh lỗi nếu dữ liệu lưu trữ còn id cũ
+  static WaveStyle fromId(String? id) {
+    switch (id) {
+      case 'organic':
+      case 'aurora':
+        return WaveStyle.aurora;
+      case 'geometric':
+      case 'constellation':
+        return WaveStyle.constellation;
+      case 'breathing':
+      case 'dunes':
+      case 'night_sky':
+      case 'nightSky':
+        return WaveStyle.nightSky;
+      case 'ripples':
+      case 'silk':
+        return WaveStyle.silk;
+      case 'activity':
+      case 'pulse':
+        return WaveStyle.activity;
+      case 'cascade':
+        return WaveStyle.cascade;
+      case 'bloom':
+        return WaveStyle.bloom;
+      default:
+        return WaveStyle.aurora;
+    }
+  }
 }

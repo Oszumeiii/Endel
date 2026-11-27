@@ -2,13 +2,11 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 /// Helper chuyên biệt vẽ hiệu ứng ánh sáng khí quyển (Atmospheric Lighting),
-/// hạt lượng tử hữu cơ (Ambient Particles) và phát quang đa lớp (Multi-layer Glow)
-/// chuẩn ngôn ngữ thiết kế Endel (https://endel.io).
+/// dải màu mềm cộng sáng (Soft Fill / Orb) và đường cong mượt chuẩn ngôn ngữ Endel.
 ///
-/// Tối ưu hóa hiệu năng di động (Performance Optimization):
-/// - Tái sử dụng đối tượng Paint (Zero Heap Allocation)
-/// - Giới hạn ngưỡng làm mờ (MaskFilter Sigma) an toàn cho GPU di động
-/// - Thuật toán tạo hạt xác định (Deterministic Zero Allocation)
+/// Tối ưu hóa hiệu năng di động:
+/// - Tái sử dụng Paint static (tránh cấp phát rác mỗi frame)
+/// - Thuật toán tạo hạt xác định theo tỷ lệ vàng
 class VisualEffectsHelper {
   VisualEffectsHelper._();
 
@@ -16,12 +14,207 @@ class VisualEffectsHelper {
   static final Paint _fillPaint = Paint()..style = PaintingStyle.fill;
   static final Paint _strokePaint = Paint()..style = PaintingStyle.stroke;
   static final Paint _particlePaint = Paint()..style = PaintingStyle.fill;
-  static final Paint _particleGlowPaint = Paint()
-    ..style = PaintingStyle.fill
-    ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2.5);
+  static final Paint _softPaint = Paint()..style = PaintingStyle.fill;
 
-  /// Vẽ quầng sáng nền khí quyển sâu thẳm (Deep Atmospheric Vignette & Glow)
-  /// Tạo chiều sâu không gian (Spatial Depth) thay vì nền đen phẳng đơn điệu.
+  /// Tô nền gradient dọc sâu thẳm cho toàn bộ khung vẽ (gọi đầu tiên trong mỗi painter).
+  /// Tạo không gian tối có sắc độ nhẹ từ accent -> primary -> đen để các lớp plus nổi khối.
+  static void drawBackdrop(
+    Canvas canvas,
+    Size size,
+    Color primary,
+    Color accent, {
+    double intensity = 1.0,
+  }) {
+    if (size.isEmpty) return;
+
+    final tAccent = (0.22 * intensity).clamp(0.0, 1.0);
+    final tPrimary = (0.10 * intensity).clamp(0.0, 1.0);
+    final topColor = Color.lerp(Colors.black, accent, tAccent) ?? Colors.black;
+    final midColor = Color.lerp(Colors.black, primary, tPrimary) ?? Colors.black;
+
+    final rect = Offset.zero & size;
+    _fillPaint
+      ..blendMode = BlendMode.srcOver
+      ..maskFilter = null
+      ..shader = LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [topColor, midColor, Colors.black],
+        stops: const [0.0, 0.55, 1.0],
+      ).createShader(rect);
+
+    canvas.drawRect(rect, _fillPaint);
+    _fillPaint.shader = null;
+  }
+
+  /// Tạo đường cong quadratic bezier mượt qua danh sách điểm (an toàn khi pts < 3).
+  static Path smoothPath(List<Offset> pts) {
+    final path = Path();
+    if (pts.isEmpty) return path;
+
+    path.moveTo(pts.first.dx, pts.first.dy);
+    if (pts.length == 1) return path;
+    if (pts.length == 2) {
+      path.lineTo(pts[1].dx, pts[1].dy);
+      return path;
+    }
+
+    for (int i = 1; i < pts.length - 1; i++) {
+      final p0 = pts[i];
+      final p1 = pts[i + 1];
+      if (i == pts.length - 2) {
+        path.quadraticBezierTo(p0.dx, p0.dy, p1.dx, p1.dy);
+      } else {
+        final midX = (p0.dx + p1.dx) * 0.5;
+        final midY = (p0.dy + p1.dy) * 0.5;
+        path.quadraticBezierTo(p0.dx, p0.dy, midX, midY);
+      }
+    }
+    return path;
+  }
+
+  /// Tạo đường cong khép kín mượt hoàn toàn, không tạo góc nhọn tại điểm nối đầu-cuối.
+  static Path smoothClosedPath(List<Offset> pts) {
+    if (pts.length < 3) {
+      final path = smoothPath(pts);
+      if (pts.length == 2) path.close();
+      return path;
+    }
+
+    final path = Path();
+    final startMidX = (pts.last.dx + pts.first.dx) * 0.5;
+    final startMidY = (pts.last.dy + pts.first.dy) * 0.5;
+    path.moveTo(startMidX, startMidY);
+
+    for (int i = 0; i < pts.length; i++) {
+      final curr = pts[i];
+      final next = pts[(i + 1) % pts.length];
+      final midX = (curr.dx + next.dx) * 0.5;
+      final midY = (curr.dy + next.dy) * 0.5;
+      path.quadraticBezierTo(curr.dx, curr.dy, midX, midY);
+    }
+
+    path.close();
+    return path;
+  }
+
+  /// Tạo dải kín nối giữa hai đường [a] (xuôi) và [b] (ngược), cả hai cạnh đều dùng bezier mượt.
+  static Path ribbonPath(List<Offset> a, List<Offset> b) {
+    final path = Path();
+    if (a.isEmpty || b.isEmpty) return path;
+
+    // Cạnh trên/xuôi theo thứ tự từ đầu đến cuối danh sách a
+    path.moveTo(a.first.dx, a.first.dy);
+    if (a.length == 2) {
+      path.lineTo(a[1].dx, a[1].dy);
+    } else if (a.length >= 3) {
+      for (int i = 1; i < a.length - 1; i++) {
+        final p0 = a[i];
+        final p1 = a[i + 1];
+        if (i == a.length - 2) {
+          path.quadraticBezierTo(p0.dx, p0.dy, p1.dx, p1.dy);
+        } else {
+          final midX = (p0.dx + p1.dx) * 0.5;
+          final midY = (p0.dy + p1.dy) * 0.5;
+          path.quadraticBezierTo(p0.dx, p0.dy, midX, midY);
+        }
+      }
+    }
+
+    // Nối sang điểm cuối của b rồi đi ngược về đầu b
+    path.lineTo(b.last.dx, b.last.dy);
+    if (b.length == 2) {
+      path.lineTo(b.first.dx, b.first.dy);
+    } else if (b.length >= 3) {
+      for (int i = b.length - 2; i >= 1; i--) {
+        final p0 = b[i];
+        final p1 = b[i - 1];
+        if (i == 1) {
+          path.quadraticBezierTo(p0.dx, p0.dy, p1.dx, p1.dy);
+        } else {
+          final midX = (p0.dx + p1.dx) * 0.5;
+          final midY = (p0.dy + p1.dy) * 0.5;
+          path.quadraticBezierTo(p0.dx, p0.dy, midX, midY);
+        }
+      }
+    }
+
+    path.close();
+    return path;
+  }
+
+  /// Tô mềm một [path] bằng LinearGradient 4 điểm dừng (trong suốt -> a -> b -> trong suốt)
+  /// kết hợp BlendMode.plus và blur để tạo lớp ánh sáng giao thoa mượt.
+  static void drawSoftFill(
+    Canvas canvas,
+    Path path,
+    Rect bounds,
+    Color a,
+    Color b, {
+    double alpha = 0.16,
+    double blur = 14,
+  }) {
+    final effectiveAlpha = alpha.clamp(0.0, 1.0);
+    if (effectiveAlpha <= 0.001 || bounds.isEmpty) return;
+
+    _softPaint
+      ..blendMode = BlendMode.plus
+      ..maskFilter = blur > 0 ? MaskFilter.blur(BlurStyle.normal, blur) : null
+      ..shader = LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [
+          a.withValues(alpha: 0.0),
+          a.withValues(alpha: effectiveAlpha),
+          b.withValues(alpha: effectiveAlpha),
+          b.withValues(alpha: 0.0),
+        ],
+        stops: const [0.0, 0.3, 0.7, 1.0],
+      ).createShader(bounds);
+
+    canvas.drawPath(path, _softPaint);
+    _softPaint
+      ..shader = null
+      ..maskFilter = null
+      ..blendMode = BlendMode.srcOver;
+  }
+
+  /// Vẽ khối sáng tròn mềm với RadialGradient cộng sáng, không có lõi cứng ở tâm.
+  static void drawSoftOrb(
+    Canvas canvas,
+    Offset center,
+    double radius,
+    Color color, {
+    double alpha = 0.2,
+    double blur = 12,
+  }) {
+    final effectiveAlpha = alpha.clamp(0.0, 1.0);
+    if (radius <= 0.0 || effectiveAlpha <= 0.001) return;
+
+    final rect = Rect.fromCircle(center: center, radius: radius);
+    _softPaint
+      ..blendMode = BlendMode.plus
+      ..maskFilter = blur > 0 ? MaskFilter.blur(BlurStyle.normal, blur) : null
+      ..shader = RadialGradient(
+        center: Alignment.center,
+        radius: 1.0,
+        colors: [
+          color.withValues(alpha: effectiveAlpha),
+          color.withValues(alpha: (effectiveAlpha * 0.4).clamp(0.0, 1.0)),
+          color.withValues(alpha: 0.0),
+        ],
+        stops: const [0.0, 0.45, 1.0],
+      ).createShader(rect);
+
+    canvas.drawCircle(center, radius, _softPaint);
+    _softPaint
+      ..shader = null
+      ..maskFilter = null
+      ..blendMode = BlendMode.srcOver;
+  }
+
+  /// Vẽ quầng sáng nền khí quyển khuếch tán rộng bằng BlendMode.plus,
+  /// không vẽ đốm sáng cứng ở tâm để giữ tối giản không gian.
   static void drawAtmosphere(
     Canvas canvas,
     Size size,
@@ -38,42 +231,28 @@ class VisualEffectsHelper {
     final maxDim = math.max(size.width, size.height);
     final auraRadius = maxDim * 0.58;
 
-    // 1. Quầng sáng khuếch tán diện rộng (Broad Ambient Aura)
     final auraShader = RadialGradient(
       center: Alignment.center,
       radius: 0.95,
       colors: [
-        accentColor.withValues(alpha: 0.07 * effectiveIntensity),
-        primaryColor.withValues(alpha: 0.025 * effectiveIntensity),
+        accentColor.withValues(alpha: (0.20 * effectiveIntensity).clamp(0.0, 1.0)),
+        primaryColor.withValues(alpha: (0.08 * effectiveIntensity).clamp(0.0, 1.0)),
         Colors.transparent,
       ],
       stops: const [0.0, 0.45, 1.0],
     ).createShader(Rect.fromCircle(center: center, radius: auraRadius));
 
-    _fillPaint.shader = auraShader;
+    _fillPaint
+      ..blendMode = BlendMode.plus
+      ..maskFilter = null
+      ..shader = auraShader;
     canvas.drawCircle(center, auraRadius, _fillPaint);
-    _fillPaint.shader = null;
-
-    // 2. Điểm sáng tiêu cự trung tâm (Core Atmospheric Luminescence)
-    final coreRadius = maxDim * 0.24 * (0.95 + 0.05 * audioReactiveFactor);
-    final coreShader = RadialGradient(
-      center: Alignment.center,
-      radius: 0.9,
-      colors: [
-        primaryColor.withValues(alpha: 0.05 * effectiveIntensity),
-        accentColor.withValues(alpha: 0.015 * effectiveIntensity),
-        Colors.transparent,
-      ],
-      stops: const [0.0, 0.55, 1.0],
-    ).createShader(Rect.fromCircle(center: center, radius: coreRadius));
-
-    _fillPaint.shader = coreShader;
-    canvas.drawCircle(center, coreRadius, _fillPaint);
-    _fillPaint.shader = null;
+    _fillPaint
+      ..shader = null
+      ..blendMode = BlendMode.srcOver;
   }
 
-  /// Vẽ các hạt vi mô trôi nổi hữu cơ (Organic Ambient Stardust Particles)
-  /// Tính toán theo trường vector mượt mà phi lặp lại, không tạo rác bộ nhớ (Zero Allocation).
+  /// Vẽ các hạt vi mô trôi nổi hữu cơ với mật độ thưa và độ mờ dịu mắt.
   static void drawAmbientParticles(
     Canvas canvas,
     Size size,
@@ -81,12 +260,12 @@ class VisualEffectsHelper {
     Color color, {
     double intensity = 1.0,
     double audioReactiveFactor = 1.0,
-    int count = 26,
+    int count = 10,
   }) {
-    if (intensity <= 0.01) return;
+    if (intensity <= 0.01 || size.isEmpty) return;
 
     final baseAlpha =
-        (0.35 * intensity * (0.85 + 0.15 * audioReactiveFactor)).clamp(0.0, 1.0);
+        (0.25 * intensity * (0.85 + 0.15 * audioReactiveFactor)).clamp(0.0, 0.25);
 
     for (int i = 0; i < count; i++) {
       // Tọa độ gốc phân bố rải đều theo chuỗi tỷ lệ vàng phi lặp lại
@@ -106,28 +285,24 @@ class VisualEffectsHelper {
       final sway = math.sin(time * freqX + phaseX) * (14.0 + (i % 4) * 8.0);
       final x = (seedX * size.width + sway) % size.width;
 
-      // Độ sáng phập phồng sinh học đồng bộ nhịp âm
-      final breath = (math.sin(time * 1.5 + i * 0.9) + 1.0) / 2.0;
+      // Độ sáng phập phồng chậm theo nhịp thở
+      final breath = (math.sin(time * 1.2 + i * 0.9) + 1.0) * 0.5;
       final particleAlpha =
-          ((0.12 + breath * 0.88) * baseAlpha).clamp(0.0, 1.0);
+          ((0.2 + breath * 0.8) * baseAlpha).clamp(0.0, 0.25);
 
-      final radius = 0.8 + ((i % 4) * 0.45);
+      // Bán kính nhỏ 0.6 - 1.4 để không lấn át khối màu chính
+      final radius = 0.6 + ((i % 5) * 0.2);
 
-      _particlePaint.color = color.withValues(alpha: particleAlpha);
+      _particlePaint
+        ..blendMode = BlendMode.plus
+        ..color = color.withValues(alpha: particleAlpha);
       canvas.drawCircle(Offset(x, y), radius, _particlePaint);
-
-      // Thêm quầng sáng mờ cho hạt lớn
-      if (radius > 1.4 && particleAlpha > 0.15) {
-        _particleGlowPaint.color =
-            color.withValues(alpha: (particleAlpha * 0.35).clamp(0.0, 1.0));
-        canvas.drawCircle(Offset(x, y), radius * 2.0, _particleGlowPaint);
-      }
     }
+    _particlePaint.blendMode = BlendMode.srcOver;
   }
 
-  /// Vẽ đường cong với hiệu ứng phát sáng đa tầng (Multi-layer Atmospheric Glow)
-  /// - Tầng 1: Hào quang khuếch tán xa (Ambient Glow)
-  /// - Tầng 2: Lõi sáng sắc nét (Luminous Core Stroke)
+  /// Vẽ đường cong với hiệu ứng phát sáng đa tầng.
+  @Deprecated('Sử dụng drawSoftFill hoặc drawSoftOrb để thay thế.')
   static void drawGlowingPath(
     Canvas canvas,
     Path path, {
@@ -143,7 +318,6 @@ class VisualEffectsHelper {
     final effectiveCoreAlpha =
         (coreAlpha * (0.90 + 0.10 * audioReactiveFactor)).clamp(0.0, 1.0);
 
-    // 1. Lớp hào quang khuếch tán (Ambient Glow)
     if (glowSigma > 0 && effectiveGlowAlpha > 0.005) {
       _strokePaint
         ..color = color.withValues(alpha: effectiveGlowAlpha)
@@ -154,7 +328,6 @@ class VisualEffectsHelper {
       _strokePaint.maskFilter = null;
     }
 
-    // 2. Lõi sáng sắc nét (Sharp Core)
     _strokePaint
       ..color = color.withValues(alpha: effectiveCoreAlpha)
       ..strokeWidth = strokeWidth
@@ -163,7 +336,8 @@ class VisualEffectsHelper {
     canvas.drawPath(path, _strokePaint);
   }
 
-  /// Vẽ điểm nút / hạt phát quang với quầng sáng (Glowing Node)
+  /// Vẽ điểm nút phát quang với quầng sáng.
+  @Deprecated('Sử dụng drawSoftOrb để thay thế.')
   static void drawGlowingPoint(
     Canvas canvas,
     Offset point,

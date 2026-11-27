@@ -4,14 +4,14 @@ import '../../../domain/entities/visual_theme_config.dart';
 import '../visual_painter_strategy.dart';
 import 'visual_effects_helper.dart';
 
-/// 4. ACTIVITY: Dải sóng động học và luồng quỹ đạo năng lượng (Kinetic Flux)
-/// Tái hiện chuẩn xác phong cách Endel Activity:
-/// - Cặp dải sóng xoắn bện kép (Double-helix Braided Ribbons)
-/// - Hạt photon năng lượng di chuyển tốc độ cao để lại vệt sáng (Phosphorescent Light Trails)
-/// - Trục xoáy động lực trung tâm tỏa xung nhịp đều đặn theo nhịp vận động
-/// - Đồng bộ nhịp bước/nhịp âm thực tế (Audio Cadence Reactivity)
+/// 5. ACTIVITY: Các dải xoắn bện double-helix chuyển động dọc năng động nhưng mềm mại.
 class ActivityVisualPainter extends VisualPainterStrategy {
   const ActivityVisualPainter();
+
+  static final Paint _strokePaint = Paint()
+    ..style = PaintingStyle.stroke
+    ..blendMode = BlendMode.plus
+    ..isAntiAlias = true;
 
   @override
   void paint({
@@ -25,7 +25,16 @@ class ActivityVisualPainter extends VisualPainterStrategy {
     double activityFactor = 1.0,
     double audioReactiveFactor = 1.0,
   }) {
-    // 1. Ánh sáng khí quyển
+    // 1. Nền gradient sâu thẳm
+    VisualEffectsHelper.drawBackdrop(
+      canvas,
+      size,
+      config.primaryColor,
+      config.accentColor,
+      intensity: activityFactor,
+    );
+
+    // 2. Ánh sáng khí quyển năng động hơn nhẹ
     VisualEffectsHelper.drawAtmosphere(
       canvas,
       size,
@@ -36,172 +45,150 @@ class ActivityVisualPainter extends VisualPainterStrategy {
       audioReactiveFactor: audioReactiveFactor,
     );
 
-    // 2. Hạt bụi không gian năng động
+    // 3. Hạt vi mô trôi nhanh hơn Relax một chút
     VisualEffectsHelper.drawAmbientParticles(
       canvas,
       size,
-      time * 1.4,
+      time * 0.8,
       config.primaryColor,
-      intensity: activityFactor,
+      intensity: activityFactor * 0.9,
       audioReactiveFactor: audioReactiveFactor,
-      count: 28,
+      count: 9,
     );
 
+    final layers = config.layerCount.clamp(3, 6);
+    final playScale = isPlaying ? 1.0 : 0.4;
+    final audioScale = 0.92 + 0.08 * audioReactiveFactor;
     final intensity =
         config.deformationIntensity *
         (0.4 + 0.6 * activityFactor) *
+        playScale *
         audioReactiveFactor;
-    final layers = config.layerCount.clamp(3, 6);
+
     final halfHeight = size.height * 0.48;
-    final spacing = size.width * 0.78 / (layers - 1);
-    const points = 150;
+    final spacing = layers > 1 ? (size.width * 0.76) / (layers - 1) : 0.0;
+    const points = 110;
+
+    final bounds = Rect.fromLTWH(
+      0,
+      center.dy - halfHeight,
+      size.width,
+      halfHeight * 2,
+    );
 
     for (int layer = 0; layer < layers; layer++) {
       final dir = layer % 2 == 0 ? 1.0 : -1.0;
-      final layerSpeed = 1.0 + (layer * 0.35);
+      // Nhanh hơn Relax ~1.8 lần và chịu tác động của activityFactor
+      final layerSpeed =
+          (0.35 + layer * 0.1) * 1.8 * (0.75 + 0.25 * activityFactor);
       final layerTime = time * layerSpeed * dir;
-      final horizontalOffset = (layer - (layers - 1) / 2.0) * spacing;
+      final baseX = center.dx + (layer - (layers - 1) / 2.0) * spacing;
       final depthFactor = (layer + 1) / layers;
 
-      final path = Path();
-      final pointsList = <Offset>[];
+      final strandA = <Offset>[];
+      final strandB = <Offset>[];
 
       for (int i = 0; i <= points; i++) {
         final progress = i / points;
         final envelope = math.pow(math.sin(progress * math.pi), 1.1);
 
         final waveA =
-            math.sin(progress * 2 * math.pi * 2.5 + layerTime) * 16 * intensity;
+            math.sin(progress * 2 * math.pi * 2.2 + layerTime) *
+            18.0 *
+            intensity;
         final waveB =
-            math.cos(progress * 2 * math.pi * 4.2 - layerTime * 1.5) *
-            9 *
+            math.cos(progress * 2 * math.pi * 3.8 - layerTime * 1.4 + 0.8) *
+            10.0 *
             intensity;
         final waveC =
-            math.sin(progress * 2 * math.pi * 1.8 + layerTime * 2.0) *
-            6 *
+            math.sin(progress * 2 * math.pi * 1.5 + layerTime * 1.7 + 1.6) *
+            6.0 *
             intensity;
 
-        final x =
-            center.dx +
-            horizontalOffset +
-            (waveA + waveB + waveC) * envelope;
+        // Hệ số phình-thắt tạo nhịp bện double-helix dọc theo thân dải
+        final thickness =
+            0.5 +
+            0.5 * math.sin(progress * 2 * math.pi * 2.0 + layerTime * 0.8);
+        final offset = (waveA + waveB + waveC) * thickness * envelope;
         final y = center.dy - halfHeight + (progress * halfHeight * 2.0);
 
-        pointsList.add(Offset(x, y));
-
-        if (i == 0) {
-          path.moveTo(x, y);
-        } else {
-          path.lineTo(x, y);
-        }
+        strandA.add(Offset(baseX + offset, y));
+        strandB.add(Offset(baseX - offset, y));
       }
 
-      // Tô dải lụa sóng với hiệu ứng chuyển sắc
+      // 4. Dải lụa mềm giữa hai sợi xoắn bện (tối đa 6 blur/frame vì layers <= 6)
+      final ribbon = VisualEffectsHelper.ribbonPath(strandA, strandB);
+      final fillAlpha =
+          ((0.14 + depthFactor * 0.06) * activityFactor * audioScale).clamp(
+            0.0,
+            0.20,
+          );
+      final blurSigma = 10.0 + depthFactor * 4.0;
+
+      VisualEffectsHelper.drawSoftFill(
+        canvas,
+        ribbon,
+        bounds,
+        config.primaryColor,
+        config.accentColor,
+        alpha: fillAlpha,
+        blur: blurSigma,
+      );
+
+      // 5. Hai sợi viền mảnh mượt bằng smoothPath
+      final pathA = VisualEffectsHelper.smoothPath(strandA);
+      final pathB = VisualEffectsHelper.smoothPath(strandB);
+
       final strokeAlpha =
-          ((0.20 + depthFactor * 0.65) *
+          ((0.22 + depthFactor * 0.28) *
                   (0.35 + 0.65 * activityFactor) *
-                  (0.92 + 0.08 * audioReactiveFactor))
-              .clamp(0.0, 1.0);
-      final strokeGradient = LinearGradient(
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter,
-        colors: [
-          Colors.transparent,
-          config.primaryColor.withValues(alpha: strokeAlpha * 0.4),
-          config.primaryColor.withValues(alpha: strokeAlpha),
-          config.primaryColor.withValues(alpha: strokeAlpha * 0.4),
-          Colors.transparent,
-        ],
-        stops: const [0.0, 0.15, 0.5, 0.85, 1.0],
-      );
+                  audioScale)
+              .clamp(0.0, 0.50);
 
-      final shaderRect = Rect.fromLTWH(
-        0,
-        center.dy - halfHeight,
-        size.width,
-        halfHeight * 2,
-      );
+      _strokePaint
+        ..strokeWidth = 1.0 + depthFactor * 0.5
+        ..shader = LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            Colors.transparent,
+            config.primaryColor.withValues(alpha: strokeAlpha * 0.45),
+            config.primaryColor.withValues(alpha: strokeAlpha),
+            config.primaryColor.withValues(alpha: strokeAlpha * 0.45),
+            Colors.transparent,
+          ],
+          stops: const [0.0, 0.14, 0.5, 0.86, 1.0],
+        ).createShader(bounds);
 
-      // Phát quang hào quang dải sóng
-      if (layer % 2 == 0) {
-        final glowPaint = Paint()
-          ..shader = strokeGradient.createShader(shaderRect)
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 3.0
-          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5.0)
-          ..isAntiAlias = true;
-        canvas.drawPath(path, glowPaint);
-      }
+      canvas.drawPath(pathA, _strokePaint);
+      canvas.drawPath(pathB, _strokePaint);
 
-      // Nét vẽ chính
-      final corePaint = Paint()
-        ..shader = strokeGradient.createShader(shaderRect)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.3 + (depthFactor * 0.7)
-        ..isAntiAlias = true;
-      canvas.drawPath(path, corePaint);
+      // 6. Một dải sáng ngắn trượt dọc sợi chính (không dùng chấm tròn)
+      final rawSlide = (layerTime * 0.18 + layer * 0.23) % 1.0;
+      final slidePos = rawSlide < 0 ? rawSlide + 1.0 : rawSlide;
+      final s0 = (slidePos - 0.14).clamp(0.0, 1.0);
+      final s1 = slidePos.clamp(0.0, 1.0);
+      final s2 = (slidePos + 0.14).clamp(0.0, 1.0);
+      final slideAlpha = (0.35 * activityFactor * audioScale).clamp(0.0, 0.35);
 
-      // 3. CÁC HẠT NĂNG LƯỢNG PHOTON DI CHUYỂN DỌC THEO SÓNG
-      final beadCount = 2;
-      for (int b = 0; b < beadCount; b++) {
-        final beadCycle =
-            (layerTime * 0.25 + (b * 0.5) + (layer * 0.2)) % 1.0;
-        final beadIndex = (beadCycle * points).clamp(0, points - 1).toInt();
-        final currentPoint = pointsList[beadIndex];
+      _strokePaint
+        ..strokeWidth = 1.6
+        ..shader = LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            Colors.transparent,
+            config.primaryColor.withValues(alpha: slideAlpha),
+            Colors.transparent,
+          ],
+          stops: [s0, s1, s2],
+        ).createShader(bounds);
 
-        final trailLength = 8;
-        for (int t = 1; t <= trailLength; t++) {
-          final trailIdx =
-              (beadIndex - (dir > 0 ? t : -t)).clamp(0, points - 1);
-          final trailPoint = pointsList[trailIdx];
-          final trailAlpha =
-              (1.0 - (t / trailLength)) * 0.35 * activityFactor;
-          final trailPaint = Paint()
-            ..color = config.primaryColor.withValues(
-              alpha: trailAlpha.clamp(0.0, 1.0),
-            )
-            ..style = PaintingStyle.fill;
-          canvas.drawCircle(trailPoint, 1.2, trailPaint);
-        }
-
-        // Hạt năng lượng chính phát sáng
-        VisualEffectsHelper.drawGlowingPoint(
-          canvas,
-          currentPoint,
-          2.6 + (layer * 0.4),
-          color: config.primaryColor,
-          glowSigma: 5.0,
-          glowAlpha: (0.4 * activityFactor * audioReactiveFactor).clamp(0.0, 1.0),
-          coreAlpha: (0.95 * activityFactor).clamp(0.0, 1.0),
-          audioReactiveFactor: audioReactiveFactor,
-        );
-      }
+      canvas.drawPath(pathA, _strokePaint);
     }
 
-    // 4. VÒNG XOÁY ĐỘNG LỰC TRUNG TÂM (Kinetic Pulse Core)
-    final corePulse = (math.sin(time * 3.5) + 1.0) / 2.0;
-    final coreRadius =
-        baseRadius *
-        0.42 *
-        (1.0 + corePulse * 0.15 * activityFactor) *
-        (0.96 + 0.04 * audioReactiveFactor);
-
-    final coreGlowPaint = Paint()
-      ..color = config.primaryColor.withValues(
-        alpha: ((0.05 + corePulse * 0.08) *
-                activityFactor *
-                audioReactiveFactor)
-            .clamp(0.0, 1.0),
-      )
-      ..style = PaintingStyle.fill;
-    canvas.drawCircle(center, coreRadius, coreGlowPaint);
-
-    final ringPaint = Paint()
-      ..color = config.primaryColor.withValues(
-        alpha: ((0.15 + corePulse * 0.25) * activityFactor).clamp(0.0, 1.0),
-      )
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.0;
-    canvas.drawCircle(center, coreRadius, ringPaint);
+    _strokePaint
+      ..shader = null
+      ..blendMode = BlendMode.srcOver;
   }
 }
